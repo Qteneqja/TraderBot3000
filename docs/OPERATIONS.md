@@ -11,6 +11,7 @@ Recovery: suspend new entries, inspect failure/quote timestamps, verify order/ac
 Troubleshooting:
 
 - Empty chart: check DEMO_MODE/source, seed fixtures or download provider history.
+- Dashboard 502 while port 8000 is healthy: check the frontend proxy. Its backend hostname must be resolved through Docker DNS after backend replacement. Rebuild the frontend with `docker compose up --build --no-deps -d frontend` to install the current proxy configuration. The frontend health check now verifies proxied `/health/ready`, so a working static page alone cannot report a healthy dashboard.
 - No trades: expected without execution-validated inference; inspect rejection reasons.
 - Missing OANDA key: configure practice credentials; public crypto analysis is independent.
 - Readiness 503: run migrations and `python -m app.cli init`.
