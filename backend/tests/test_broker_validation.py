@@ -6,7 +6,12 @@ import httpx
 import pytest
 
 from app.brokers.oanda import OandaPractice
-from app.brokers.validation import conversion_contract, instrument_contract, readiness_report, validate_protection
+from app.brokers.validation import (
+    conversion_contract,
+    instrument_contract,
+    readiness_report,
+    validate_protection,
+)
 from app.core.config import Settings
 
 INSTRUMENT = {"name": "EUR_USD", "type": "CURRENCY", "displayPrecision": 5, "tradeUnitsPrecision": 0,
