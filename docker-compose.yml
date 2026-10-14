@@ -1,0 +1,78 @@
+name: aegistrade
+x-backend: &backend
+  build: ./backend
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://aegis:${POSTGRES_PASSWORD:-aegis_local}@db:5432/aegis
+  restart: unless-stopped
+  volumes:
+    - research-data:/app/data
+    - models:/app/model_artifacts
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_DB: aegis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aegis_local}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["sh", "-c", "alembic upgrade head && python -m app.cli init"]
+    depends_on:
+      db: {condition: service_healthy}
+  backend:
+    <<: *backend
+    ports: ["127.0.0.1:${BACKEND_PORT:-8000}:8000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:${FRONTEND_PORT:-5173}:8080"]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+  trading-worker:
+    <<: *backend
+    command: ["python", "-m", "app.worker", "trading"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck", "trading"]
+      interval: 20s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      backend: {condition: service_healthy}
+  market-data-worker:
+    <<: *backend
+    command: ["python", "-m", "app.worker", "market"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck", "market"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    depends_on:
+      backend: {condition: service_healthy}
+volumes:
+  postgres-data:
+  research-data:
+  models:
