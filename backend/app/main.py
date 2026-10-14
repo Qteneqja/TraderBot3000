@@ -17,6 +17,7 @@ from app.models.tables import (
     Event,
     Instrument,
     ModelPrediction,
+    ModelReview,
     ModelVersion,
     OrderRow,
     QuoteRow,
@@ -75,7 +76,7 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0003" or db.get(Account, "PAPER") is None:
+        if revision != "0004" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
@@ -160,6 +161,14 @@ def predictions(db: Session = Depends(get_db)):
     return [
         serialize(p)
         for p in db.scalars(select(ModelPrediction).order_by(ModelPrediction.time.desc()).limit(100)).all()
+    ]
+
+
+@app.get("/api/model-reviews")
+def model_reviews(db: Session = Depends(get_db)):
+    return [
+        serialize(r)
+        for r in db.scalars(select(ModelReview).order_by(ModelReview.created_at.desc()).limit(50)).all()
     ]
 
 

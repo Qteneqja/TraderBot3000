@@ -27,4 +27,6 @@ Candidate model experiments use shared entry/stop/target proposals, immutable ar
 
 Migrations 0002 and 0003 add shadow observations and persisted paper costs. Fees, financing, source identity and lifecycle state survive process restarts. Legacy open orders lacking execution metadata cause suspension rather than guessed reconstruction.
 
+Migration 0004 adds immutable content-addressed research reviews. Predeclared policy and risk settings are embedded in new candidate artifacts. Assessment verifies evidence, runs held-out base/stressed replay when prerequisites pass, persists results and audits once. Reviews are read-only dashboard data and cannot change registry status or execute orders.
+
 One API and one worker of each type are appropriate. Do not scale execution workers before account-scoped concurrency tests and leasing are complete. No distributed message broker or Kubernetes is introduced. Initial simplifications include a USD paper account, global correlation bucket, full-close fixed protection and no live transport.

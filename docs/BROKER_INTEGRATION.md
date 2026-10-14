@@ -16,4 +16,6 @@ Next integration sequence:
 
 Coinbase execution and live trading are unsupported. Crypto stays analysis/paper-only; Canadian account eligibility, shorting, leverage and supported orders must be verified separately.
 
+Verification on October 14, 2026: a read-only historical EUR/USD request using the supplied local credential returned HTTP 401 from the practice endpoint. This is an authorization failure, not a successful provider integration. Correct the practice credential in ignored `.env` and provide OANDA_ACCOUNT_ID before account verification. No practice orders were submitted and no live endpoint was tried.
+
 Sources: [OANDA order definitions](https://developer.oanda.com/rest-live-v20/order-df/), [order endpoints](https://developer.oanda.com/rest-live-v20/order-ep/), [trade endpoints](https://developer.oanda.com/rest-live-v20/trade-ep/). Do not use client extensions on MT4-linked accounts.

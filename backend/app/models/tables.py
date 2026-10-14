@@ -132,6 +132,15 @@ class ModelVersion(Base):
     metadata_json: Mapped[dict] = mapped_column(JSON)
 
 
+class ModelReview(Base):
+    __tablename__ = "model_reviews"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    model_id: Mapped[str] = mapped_column(ForeignKey("model_versions.id"))
+    status: Mapped[str] = mapped_column(String(32))
+    report: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Event(Base):
     __tablename__ = "audit_logs"
     id: Mapped[int] = mapped_column(primary_key=True)

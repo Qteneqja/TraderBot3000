@@ -72,6 +72,10 @@ def main():
     p = commands.add_parser("init")
     p.add_argument("--demo", action="store_true")
     p.add_argument("--demo-count", type=int, default=360)
+    commands.add_parser("acceptance-policy")
+    p = commands.add_parser("assess-model")
+    p.add_argument("version")
+    p.add_argument("--artifacts", default="model_artifacts")
     p = commands.add_parser("shadow")
     p.add_argument("version")
     p.add_argument("--artifacts", default="model_artifacts")
@@ -112,7 +116,16 @@ def main():
             p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
     commands.add_parser("backtest-demo")
     args = parser.parse_args()
-    if args.command == "init":
+    if args.command == "acceptance-policy":
+        from app.machine_learning.policy import acceptance_policy
+
+        print(json.dumps(acceptance_policy(get_settings()), indent=2))
+    elif args.command == "assess-model":
+        from app.machine_learning.assessment import assess_model
+
+        with SessionLocal() as db:
+            print(json.dumps(assess_model(db, args.version, Path(args.artifacts), get_settings()), indent=2))
+    elif args.command == "init":
         init(args.demo, args.demo_count)
         print("Database initialized" + (" with SYNTHETIC fixtures" if args.demo else ""))
     elif args.command == "shadow":
@@ -171,6 +184,7 @@ def main():
                 FillAssumptions(Decimal(args.spread), Decimal(args.slippage), Decimal(args.fee_rate)),
                 Path(args.output),
                 args.family,
+                settings=get_settings(),
             )
             db.add(ModelVersion(id=report["version"], metadata_json=report, status="EXPERIMENTAL"))
             db.commit()

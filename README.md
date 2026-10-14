@@ -77,9 +77,13 @@ docker compose exec backend python -m app.cli train-candidates --symbol EUR_USD 
 docker compose exec backend python -m app.cli shadow VERSION
 docker compose exec backend python -m app.cli replay-shadow VERSION --limit 200
 docker compose exec backend python -m app.cli backtest-model VERSION --partition validation --output data/reports/validation.json
+docker compose exec backend python -m app.cli acceptance-policy
+docker compose exec backend python -m app.cli assess-model VERSION
 ```
 
 The Model lab displays stored experimental shadow probabilities. Replay never submits an order. Portfolio replay verifies the original input candles and reuses the risk engine; zero qualifying trades is a valid result. Existing artifacts and reports are not overwritten. Preserve the final test partition for a predeclared evaluation rather than repeated tuning. The older `train` command is a directional diagnostic whose artifacts cannot be deployed to shadow.
+
+New candidate artifacts bind the research screening policy and risk settings before fitting. Assessment stores an immutable, deduplicated report visible in Model lab. Synthetic data, short histories, changed policies and insufficient samples fail screening. Qualifying research is checked against baseline predictions, portfolio economics, uncertainty and doubled costs. Passing research checks never activates a model; execution approval and real-time soak evidence remain separate outstanding work. See [acceptance methodology](docs/MODEL_ACCEPTANCE.md).
 
 ## Tests
 
@@ -101,6 +105,8 @@ docker compose run --rm --no-deps --volume "${PWD}/backend:/work" --workdir /wor
 ```
 
 Tests need no paid APIs, credentials or real money. Backend versions are pinned in `backend/requirements.lock`; frontend versions in `package-lock.json`.
+
+The fault suite runs on SQLite and, when `TEST_POSTGRES_URL` is set, a dedicated randomly named PostgreSQL schema per case. The account in that URL must be able to create test schemas. CI provides a disposable database. Without this variable, PostgreSQL cases are explicitly skipped; do not count them as passed. These accelerated tests do not replace a sustained real-time soak.
 
 ## Current capabilities
 

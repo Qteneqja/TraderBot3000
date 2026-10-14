@@ -14,6 +14,7 @@ from sklearn.frozen import FrozenEstimator
 
 from app.backtesting.simulator import FillAssumptions, simulate_trade
 from app.indicators.features import FEATURES, compute, frame
+from app.machine_learning.policy import acceptance_policy
 from app.machine_learning.training import estimator, scores
 from app.market_data.fingerprint import candle_manifest
 from app.schemas.domain import Quote
@@ -130,7 +131,14 @@ def economic_report(samples, probabilities, threshold=0.8):
 
 
 def train_candidates(
-    candles, tick: Decimal, strategy: str, costs: FillAssumptions, output: Path, family="logistic", horizon=12
+    candles,
+    tick: Decimal,
+    strategy: str,
+    costs: FillAssumptions,
+    output: Path,
+    family="logistic",
+    horizon=12,
+    settings=None,
 ):
     samples, excluded = dataset(candles, tick, strategy, costs, horizon)
     if len(samples) < 300:
@@ -152,6 +160,7 @@ def train_candidates(
         "costs": {k: str(v) for k, v in vars(costs).items()},
         "family": family,
         "input_candles": candle_manifest(candles),
+        "acceptance_policy": acceptance_policy(settings),
     }
     digest = hashlib.sha256(
         (samples.to_csv(index=False) + json.dumps(scope, sort_keys=True)).encode()
@@ -179,6 +188,16 @@ def train_candidates(
             for name, p in zip(["train", "calibration", "validation", "test"], parts, strict=True)
         },
         "training_cutoff": str(samples.iloc[calibration].label_end.max()),
+        "sample_counts": {
+            name: len(part)
+            for name, part in zip(("train", "calibration", "validation", "test"), parts, strict=True)
+        },
+        "class_frequency_baseline": {
+            name: scores(
+                y[part], np.tile(np.bincount(y[training], minlength=3) / len(training), (len(part), 1))
+            )
+            for name, part in (("validation", validation), ("test", test))
+        },
         "validation": scores(y[validation], valid_p),
         "test": scores(y[test], test_p),
         "validation_economics": economic_report(samples.iloc[validation], valid_p),
