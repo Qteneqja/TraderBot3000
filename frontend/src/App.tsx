@@ -6,6 +6,7 @@ import Chart from './Chart';
 import ShadowPanel from './ShadowPanel';
 import ModelReviews from './ModelReviews';
 import PaperTrials from './PaperTrials';
+import MarketQuote from './MarketQuote';
 import { useApi, type Candle, type Model, type Order, type Overview, type Signal, type Strategy, type System } from './api';
 
 const nav = [
@@ -99,9 +100,10 @@ export default function App() {
         </section>}
         <div className="market-grid"><section className="panel market-panel"><div className="panel-heading"><div className="panel-title"><TrendingUp size={17}/><h2>Market overview</h2></div><Badge>{candles.data?.source === 'fixture' ? 'SYNTHETIC FIXTURE' : candles.data?.source ?? 'NO DATA'}</Badge></div>
           <div className="market-tabs">{symbols.map(s => <button key={s} className={s === symbol ? 'selected' : ''} onClick={() => setSymbol(s)}>{displaySymbol(s)}<small>{s.includes('_') ? 'FOREX' : 'CRYPTO'}</small></button>)}</div>
-          <div className="chart-toolbar"><div><strong className="chart-price">{last ? price(last.close, symbol) : '—'}</strong><span className={change !== null && change >= 0 ? 'positive' : 'negative'}>{change !== null ? `${change >= 0 ? '+' : ''}${pct(change)}` : ''}</span><small>Last completed candle · {last ? new Date(last.time).toLocaleDateString('en-CA', { timeZone: 'UTC' }) + ' UTC' : 'Awaiting data'}</small></div>
+          <div className="chart-toolbar"><div><strong className="chart-price">{last ? price(last.close, symbol) : '—'}</strong><span className={change !== null && change >= 0 ? 'positive' : 'negative'}>{change !== null ? `${change >= 0 ? '+' : ''}${pct(change)}` : ''}</span><small>Last completed candle · {last ? new Date(last.time).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : 'Awaiting data'}</small></div>
             <div className="timeframes">{[[60, '1m'], [300, '5m'], [900, '15m'], [3600, '1h']].map(([v, label]) => <button key={v} className={timeframe === v ? 'selected' : ''} onClick={() => setTimeframe(+v)}>{label}</button>)}</div></div>
-          <Chart candles={candles.data?.candles ?? []} symbol={symbol}/><div className="chart-footer"><span><span className="status-dot amber-dot"/> {data?.demo ? 'Historical synthetic demonstration · Not a live quote' : 'Provider candles · Verify feed freshness before execution'}</span><span>UTC</span></div>
+          <MarketQuote quote={data?.quotes?.find(q => q.symbol === symbol)} symbol={symbol} demo={data?.demo ?? true} error={Boolean(overview.error)}/>
+          <Chart candles={candles.data?.candles ?? []} symbol={symbol}/><div className="chart-footer"><span><span className="status-dot amber-dot"/> {data?.demo ? 'Historical synthetic demonstration · Not a live quote' : 'Completed provider candles · New candles appear after their interval closes'}</span><span>UTC</span></div>
         </section><aside className="market-aside"><section className="panel guard-panel"><div className="panel-heading"><div className="panel-title"><ShieldCheck size={17}/><h2>Execution guard</h2></div><span className="status-dot"/></div>
           <div className="guard-visual"><ShieldCheck size={32}/></div><h3>Capital preservation first.</h3><p>New entries require current data, a validated model, and independent risk approval.</p>
           <div className="check-row"><span>Real-money execution</span><Badge>DISABLED</Badge></div><div className="check-row"><span>Model deployment</span><Badge tone="amber">{data?.paper_deployments ? 'PAPER TRIAL CONFIGURED' : 'UNVALIDATED'}</Badge></div><div className="check-row"><span>New paper entries</span><Badge tone="amber">{data?.account.suspended ? 'SUSPENDED' : data?.paper_deployments ? 'RUNTIME CHECKS REQUIRED' : 'AWAITING EVIDENCE'}</Badge></div>

@@ -28,3 +28,11 @@ Research example and shadow commands are in README. Model artifacts and JSON rep
 Assessment results appear under Acceptance reviews in Model lab. `REJECTED` includes unmet criteria; `RESEARCH_GATES_PASSED` still does not activate trading. Do not weaken policy values to make the synthetic demonstration pass. New policy versions require new experiments and separately justified validation research.
 
 Future AWS design: private EC2 or small ECS deployment, encrypted managed PostgreSQL/backups, Secrets Manager, CloudWatch, TLS and authenticated ingress. Keep one execution owner per account until leasing is proven. Restore tests and long paper/practice soak tests must precede live consideration. No AWS deployment is performed.
+
+## Current provider data versus fixtures
+
+DEMO_MODE=true deliberately selects synthetic historical candles; it cannot provide live prices. For provider data, set DEMO_MODE=false in ignored .env while retaining TRADING_MODE=PAPER and ENABLE_LIVE_TRADING=false, then recreate services with `docker compose up --build -d`. This enables market-data streams/polling, not broker orders. Stop any fixture recorder run before starting a real-market recording.
+
+The dashboard presents completed candles separately from latest bid/ask quotes and refreshes every 15 seconds. A five-minute candle appears only after it closes and the next ingestion poll completes. System health reports CONNECTED only while every configured instrument for that provider has a fresh matching-source quote, DEGRADED for partial freshness, and WAITING_FOR_FRESH_QUOTES otherwise. Initial connection failures and later outages are recorded and retried; configured credentials alone are not proof of current connectivity.
+
+The live polling loop fetches at most 300 recent intervals per symbol/timeframe on each cycle. If existing history is older, an audited market_history_gap_deferred event identifies the skipped interval. Use the explicit download command to fill older research gaps; no candles are fabricated and recent polling does not imply a complete training dataset.

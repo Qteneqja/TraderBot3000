@@ -54,7 +54,20 @@ async def candles_loop(providers, instruments):
                 end = datetime.fromtimestamp(int(now.timestamp()) // timeframe * timeframe, timezone.utc)
                 with SessionLocal() as db:
                     existing = load_candles(db, symbol, timeframe, provider_name, 1)
-                    start = existing[-1].time if existing else end - timedelta(seconds=timeframe * 300)
+                    recent_start = end - timedelta(seconds=timeframe * 300)
+                    start = max(existing[-1].time, recent_start) if existing else recent_start
+                    if existing and existing[-1].time < recent_start:
+                        record(
+                            "market_history_gap_deferred",
+                            {
+                                "symbol": symbol,
+                                "timeframe": timeframe,
+                                "source": provider_name,
+                                "last_stored": existing[-1].time.isoformat(),
+                                "recent_start": recent_start.isoformat(),
+                                "reason": "Live polling is bounded; use download for historical backfill",
+                            },
+                        )
                     try:
                         await ingest(db, providers[provider_name], symbol, timeframe, start, end)
                     except asyncio.CancelledError:

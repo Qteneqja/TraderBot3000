@@ -211,10 +211,32 @@ def risk():
 def system(db: Session = Depends(get_db)):
     s = get_settings()
     events = db.scalars(select(Event).order_by(Event.id.desc()).limit(50)).all()
+    now = datetime.now(timezone.utc)
+
+    def feed_status(provider):
+        if s.demo_mode:
+            return "FIXTURES"
+        if provider == "oanda" and not s.oanda_api_key.get_secret_value():
+            return "NOT_CONFIGURED"
+        instruments = db.scalars(select(Instrument).where(Instrument.provider == provider)).all()
+        fresh = []
+        for instrument in instruments:
+            quote = db.get(QuoteRow, instrument.symbol)
+            fresh.append(
+                bool(
+                    quote
+                    and quote.source == provider
+                    and -2 <= (now - aware(quote.time)).total_seconds() <= s.max_quote_age_seconds
+                )
+            )
+        return (
+            "CONNECTED" if fresh and all(fresh) else "DEGRADED" if any(fresh) else "WAITING_FOR_FRESH_QUOTES"
+        )
+
     return {
         "database": "CONNECTED",
-        "oanda": "CONFIGURED_NOT_VERIFIED" if s.oanda_api_key.get_secret_value() else "NOT_CONFIGURED",
-        "coinbase": "FIXTURES" if s.demo_mode else "SEE_FEED_HEARTBEAT",
+        "oanda": feed_status("oanda"),
+        "coinbase": feed_status("coinbase"),
         "llm": "CONFIGURED_NOT_VERIFIED"
         if (
             s.deepseek_api_key.get_secret_value()
