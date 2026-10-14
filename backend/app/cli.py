@@ -95,6 +95,36 @@ def main():
     p = commands.add_parser("practice-check")
     p.add_argument("--symbols", nargs="+", default=["EUR_USD", "GBP_USD"])
     p.add_argument("--output", required=True)
+    commands.add_parser("practice-reconcile")
+    p = commands.add_parser("practice-authorize")
+    p.add_argument("--trial", required=True)
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
+    p.add_argument("--autonomous", action="store_true")
+    p = commands.add_parser("practice-lifecycle-approve")
+    p.add_argument("order_id")
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
+    p = commands.add_parser("learning-enable")
+    p.add_argument("plan")
+    p.add_argument("--first-due", required=True)
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
+    p = commands.add_parser("learning-disable")
+    p.add_argument("schedule_id")
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
+    commands.add_parser("learning-tick")
+    p = commands.add_parser("learning-run")
+    p.add_argument("run_id")
+    p.add_argument("--worker", required=True)
+    commands.add_parser("collect-outcomes")
+    p = commands.add_parser("model-monitor")
+    p.add_argument("model_id")
+    p.add_argument("--mode", choices=["PAPER", "OANDA_PRACTICE"], default="PAPER")
+    p = commands.add_parser("drift-policy-approve")
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
     for name in ("paper-record-stop", "paper-record-report"):
         p = commands.add_parser(name)
         p.add_argument("run_id")
@@ -124,7 +154,8 @@ def main():
     p.add_argument("--fee-rate", required=True, help="Explicit per-side notional fee rate")
     p.add_argument("--financing-per-bar", default="0", help="Explicit per-unit financing assumption")
     p.add_argument("--output", default="model_artifacts")
-    p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
+    p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost", "random_forest"], default="logistic")
+    p.add_argument("--validation-only", action="store_true", help="Seal the final test; model remains ineligible")
     p.add_argument("--start", help="Inclusive UTC dataset boundary")
     p.add_argument("--end", help="Exclusive UTC dataset boundary")
     p = commands.add_parser("data-report")
@@ -184,6 +215,69 @@ def main():
             print(
                 json.dumps({"deployment": result, "action": args.command, "broker_execution_allowed": False})
             )
+    elif args.command in ("learning-enable", "learning-disable", "learning-tick", "learning-run"):
+        from app.machine_learning.learning import queue_due, run_research, schedule_research
+        from app.models.tables import LearningSchedule
+
+        now = datetime.now(timezone.utc)
+        with SessionLocal() as db:
+            if args.command == "learning-enable":
+                result = schedule_research(db, json.loads(Path(args.plan).read_text()), args.operator, args.reason,
+                                           datetime.fromisoformat(args.first_due), now)
+            elif args.command == "learning-tick":
+                result = queue_due(db, now)
+            elif args.command == "learning-run":
+                result = run_research(db, args.run_id, args.worker, get_settings(), now)
+            else:
+                if not args.operator.strip() or not args.reason.strip():
+                    raise ValueError("Operator attribution required")
+                schedule = db.get(LearningSchedule, args.schedule_id)
+                if schedule is None:
+                    raise ValueError("Unknown learning schedule")
+                schedule.enabled = False
+                db.add(Event(kind="learning_schedule_disabled", detail={"schedule": schedule.id,
+                             "operator": args.operator[:120], "reason": args.reason[:512]}))
+                db.commit()
+                result = {"schedule": schedule.id, "enabled": False}
+            print(json.dumps(result, indent=2))
+    elif args.command == "collect-outcomes":
+        from app.machine_learning.outcomes import collect_outcomes
+
+        with SessionLocal() as db:
+            print(json.dumps({"outcomes_added": collect_outcomes(db)}))
+    elif args.command == "model-monitor":
+        from app.brokers.reconciliation import account_key
+        from app.machine_learning.monitoring import monitor_model
+
+        with SessionLocal() as db:
+            print(json.dumps(monitor_model(db, args.model_id, args.mode,
+                  account_fingerprint=account_key(get_settings().oanda_account_id) if args.mode == "OANDA_PRACTICE" else None), indent=2))
+    elif args.command == "drift-policy-approve":
+        from app.machine_learning.monitoring import approve_drift_policy
+
+        with SessionLocal() as db:
+            print(json.dumps(approve_drift_policy(db, args.operator, args.reason, datetime.now(timezone.utc)), indent=2))
+    elif args.command in ("practice-reconcile", "practice-authorize"):
+        from app.brokers.gateway import approve_gateway
+        from app.brokers.oanda import OandaPractice
+        from app.brokers.reconciliation import reconcile_practice
+
+        async def broker_action():
+            settings = get_settings().model_copy(update={"trading_mode": "OANDA_PRACTICE", "demo_mode": False})
+            async with httpx.AsyncClient(timeout=30) as client:
+                adapter = OandaPractice(settings, client)
+                with SessionLocal() as db:
+                    if args.command == "practice-reconcile":
+                        return await reconcile_practice(db, adapter, settings.oanda_account_id)
+                    return await approve_gateway(db, adapter, settings, args.trial, args.operator, args.reason,
+                                                 test_only=not args.autonomous)
+
+        print(json.dumps(asyncio.run(broker_action()), indent=2))
+    elif args.command == "practice-lifecycle-approve":
+        from app.brokers.gateway import approve_external_lifecycle
+
+        with SessionLocal() as db:
+            print(json.dumps(approve_external_lifecycle(db, get_settings(), args.order_id, args.operator, args.reason), indent=2))
     elif args.command == "practice-check":
         from app.brokers.oanda import OandaPractice
         from app.brokers.validation import readiness_report
@@ -295,7 +389,8 @@ def main():
         start, end = datetime.fromisoformat(args.start), datetime.fromisoformat(args.end)
         with SessionLocal() as db:
             rows = load_candles(db, args.symbol, args.timeframe, args.source, 1_000_000, start=start, end=end)
-            report = coverage_report(rows, start, end, datetime.now(timezone.utc))
+            report = coverage_report(rows, start, end, datetime.now(timezone.utc),
+                                     oanda_division=get_settings().oanda_division)
             path = Path(args.output)
             if path.exists():
                 raise ValueError("Coverage reports are immutable; use a new output path")
@@ -324,6 +419,7 @@ def main():
                 Path(args.output),
                 args.family,
                 settings=get_settings(),
+                validation_only=args.validation_only,
             )
             db.add(ModelVersion(id=report["version"], metadata_json=report, status="EXPERIMENTAL"))
             db.commit()

@@ -14,6 +14,7 @@ from sklearn.frozen import FrozenEstimator
 
 from app.backtesting.simulator import FillAssumptions, simulate_trade
 from app.indicators.features import FEATURES, compute, frame
+from app.machine_learning.contracts import research_code_contract
 from app.machine_learning.policy import acceptance_policy
 from app.machine_learning.training import estimator, scores
 from app.market_data.coverage import coverage_report
@@ -131,6 +132,41 @@ def economic_report(samples, probabilities, threshold=0.8):
     }
 
 
+def walk_forward_candidates(samples, family, sealed_test_start):
+    """Expanding training/calibration folds entirely before the sealed final test."""
+    pool = samples[(samples.time < sealed_test_start) & (samples.label_end < sealed_test_start)].reset_index(drop=True)
+    reports = []
+    for fraction in (.4, .6, .8):
+        a, b, c = int(len(pool) * fraction), int(len(pool) * (fraction + .1)), min(len(pool), int(len(pool) * (fraction + .2)))
+        if min(a, b-a, c-b) < 20:
+            reports.append({"status": "INSUFFICIENT", "reason": "Sample count"})
+            continue
+        training = pool.iloc[:a]
+        training = training[training.label_end < pool.iloc[a].time]
+        calibration = pool.iloc[a:b]
+        calibration = calibration[calibration.label_end < pool.iloc[b].time]
+        validation = pool.iloc[b:c]
+        if any(np.bincount(part.label.to_numpy(dtype=int), minlength=3).min() < 5 for part in (training, calibration)):
+            reports.append({"status": "INSUFFICIENT", "reason": "Outcome class count"})
+            continue
+        fitted = estimator(family).fit(training[CANDIDATE_FEATURES], training.label)
+        calibrated = CalibratedClassifierCV(FrozenEstimator(fitted), method="sigmoid")
+        calibrated.fit(calibration[CANDIDATE_FEATURES], calibration.label)
+        probabilities = calibrated.predict_proba(validation[CANDIDATE_FEATURES])
+        reference = np.bincount(training.label.to_numpy(dtype=int), minlength=3) / len(training)
+        reports.append({"status": "EVALUATED", "training_samples": len(training),
+                        "calibration_samples": len(calibration), "validation_samples": len(validation),
+                        "training_label_end": str(training.label_end.max()),
+                        "calibration_start": str(calibration.time.min()),
+                        "calibration_label_end": str(calibration.label_end.max()),
+                        "validation_start": str(validation.time.min()), "validation_end": str(validation.label_end.max()),
+                        "metrics": scores(validation.label.to_numpy(dtype=int), probabilities),
+                        "baseline": scores(validation.label.to_numpy(dtype=int), np.tile(reference, (len(validation), 1))),
+                        "economics": economic_report(validation, probabilities),
+                        "final_test_evaluated": False})
+    return reports
+
+
 def train_candidates(
     candles,
     tick: Decimal,
@@ -140,6 +176,8 @@ def train_candidates(
     family="logistic",
     horizon=12,
     settings=None,
+    validation_only=False,
+    experiment=None,
 ):
     samples, excluded = dataset(candles, tick, strategy, costs, horizon)
     if len(samples) < 300:
@@ -162,9 +200,13 @@ def train_candidates(
         "family": family,
         "input_candles": candle_manifest(candles),
         "acceptance_policy": acceptance_policy(settings),
+        "research_code": research_code_contract(),
+        "evaluation_mode": "VALIDATION_ONLY" if validation_only else "FULL",
+        "experiment": experiment or {},
         "coverage": coverage_report(candles, candles[0].time,
                                     candles[-1].time + timedelta(seconds=candles[-1].timeframe),
-                                    datetime.now(timezone.utc)),
+                                    datetime.now(timezone.utc),
+                                    oanda_division=settings.oanda_division if settings else "UNVERIFIED"),
     }
     digest = hashlib.sha256(
         (samples.to_csv(index=False) + json.dumps(scope, sort_keys=True)).encode()
@@ -178,7 +220,7 @@ def train_candidates(
     calibrated = CalibratedClassifierCV(FrozenEstimator(model), method="sigmoid")
     calibrated.fit(samples.iloc[calibration][CANDIDATE_FEATURES], y[calibration])
     valid_p = calibrated.predict_proba(samples.iloc[validation][CANDIDATE_FEATURES])
-    test_p = calibrated.predict_proba(samples.iloc[test][CANDIDATE_FEATURES])
+    test_p = None if validation_only else calibrated.predict_proba(samples.iloc[test][CANDIDATE_FEATURES])
     report = scope | {
         "version": version,
         "status": "EXPERIMENTAL",
@@ -200,12 +242,19 @@ def train_candidates(
             name: scores(
                 y[part], np.tile(np.bincount(y[training], minlength=3) / len(training), (len(part), 1))
             )
-            for name, part in (("validation", validation), ("test", test))
+            for name, part in ((("validation", validation),) if validation_only else (("validation", validation), ("test", test)))
         },
         "validation": scores(y[validation], valid_p),
-        "test": scores(y[test], test_p),
+        "test": None if validation_only else scores(y[test], test_p),
         "validation_economics": economic_report(samples.iloc[validation], valid_p),
-        "test_economics": economic_report(samples.iloc[test], test_p),
+        "test_economics": None if validation_only else economic_report(samples.iloc[test], test_p),
+        "feature_reference_training_only": {
+            name: {"mean": float(samples.iloc[training][name].mean()),
+                   "std": float(samples.iloc[training][name].std(ddof=0))}
+            for name in CANDIDATE_FEATURES
+        },
+        "prediction_reference_validation_only": np.histogram(valid_p[:, 1], bins=np.linspace(0, 1, 11))[0].tolist(),
+        "walk_forward": walk_forward_candidates(samples, family, samples.iloc[test[0]].time),
         "execution_validated": False,
         "limitations": [
             "Shadow inference only",

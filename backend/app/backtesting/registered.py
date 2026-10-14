@@ -28,6 +28,8 @@ def evaluate_registered(
         raise ModelUnavailable("Unknown model version")
     model = load_verified(version, root)
     metadata = version.metadata_json
+    if partition == "test" and metadata.get("evaluation_mode") == "VALIDATION_ONLY":
+        raise ModelUnavailable("Validation-only research seals the final test; prospective evaluation is required")
     start, end = [datetime.fromisoformat(t) for t in metadata["partitions"][partition]]
     if start < datetime.fromisoformat(metadata["training_cutoff"]):
         raise ModelUnavailable("Evaluation overlaps model fitting/calibration outcomes")

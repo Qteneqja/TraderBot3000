@@ -7,6 +7,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.frozen import FrozenEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
@@ -87,6 +88,8 @@ def estimator(name):
         from xgboost import XGBClassifier
 
         return XGBClassifier(n_estimators=100, max_depth=3, random_state=42, n_jobs=1)
+    if name == "random_forest":
+        return RandomForestClassifier(n_estimators=100, max_depth=5, min_samples_leaf=20, random_state=42, n_jobs=1)
     raise ValueError("Unknown model family")
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.bootstrap import bootstrap
 from app.database.session import Base, make_engine
-from app.market_data.coverage import coverage_report, weekly_closed
+from app.market_data.coverage import canada_closed, coverage_report, session_closed, weekly_closed
 from app.market_data.fixtures import demo_candles
 from app.market_data.store import insert_candles, load_candles
 
@@ -35,6 +35,25 @@ def test_duplicates_and_fixtures_never_ready():
                              minimum_days=0)
     assert report["duplicate_candles"] == 1 and not report["research_ready"]
     assert not report["checks"]["real_provider"]
+
+
+def test_canada_breaks_partial_candles_holidays_and_dst():
+    def utc(value):
+        return datetime.fromisoformat(value)
+
+    assert canada_closed(utc("2026-03-09T20:59:00+00:00"))
+    assert canada_closed(utc("2026-03-09T21:04:00+00:00"))
+    assert not canada_closed(utc("2026-03-09T21:05:00+00:00"))
+    assert canada_closed(utc("2026-11-02T21:59:00+00:00"))
+    assert session_closed(utc("2026-03-09T21:00:00+00:00"), 300, "CA")
+    assert not session_closed(utc("2026-03-09T20:55:00+00:00"), 300, "CA")
+    assert not session_closed(utc("2026-03-09T21:00:00+00:00"), 900, "CA")
+    assert canada_closed(utc("2025-12-25T18:00:00+00:00"))
+    assert not canada_closed(utc("2025-12-25T22:05:00+00:00"))
+    assert canada_closed(utc("2025-12-24T23:00:00+00:00"))
+    assert canada_closed(utc("2026-01-01T15:00:00+00:00"))
+    # No invented 2024 holiday override: retained for explicit unresolved-gap review.
+    assert not canada_closed(utc("2024-12-25T15:00:00+00:00"))
 
 
 def test_usable_days_do_not_excuse_incomplete_sessions():

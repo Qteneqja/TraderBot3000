@@ -16,7 +16,6 @@ from app.machine_learning.policy import acceptance_policy, digest
 from app.machine_learning.training import scores
 from app.models.tables import (
     Event,
-    ModelPrediction,
     OrderRow,
     PaperDeployment,
     PaperDeploymentSlot,
@@ -139,21 +138,13 @@ def trial_report(db, run_id, now, period_start=None, period_end=None):
     observed = sum((s.model_observed_seconds for s in samples), D(0))
     active_days = len({aware(o.closed_at).date() for o in closed})
     policy = trial["policy"]
-    predictions = db.scalars(select(ModelPrediction).where(
-        ModelPrediction.mode == "PAPER_TRIAL", ModelPrediction.model_id.in_(policy["models"]),
-        ModelPrediction.time >= start, ModelPrediction.time < end)).all()
-    attributed = db.scalars(select(ModelPrediction).where(
-        ModelPrediction.mode == "PAPER_TRIAL", ModelPrediction.model_id.in_(policy["models"]),
-        ModelPrediction.candidate_id.in_([o.signal_id for o in closed]),
-        ModelPrediction.time >= run.started_at, ModelPrediction.time < end)).all()
-    indexed = {(p.candidate_id, p.model_id): p for p in attributed}
     probabilities, labels = [], []
     reasons = {"TAKE_PROFIT": 1, "STOP_LOSS": 0, "STOP_AMBIGUOUS": 0, "TIMEOUT": 2}
     for order in closed:
         signal = db.get(SignalRow, order.signal_id)
-        prediction = indexed.get((order.signal_id, signal.payload.get("model_version"))) if signal else None
+        prediction = signal.payload if signal and signal.payload.get("model_version") in policy["models"] else None
         if prediction and order.close_reason in reasons:
-            values = [prediction.prediction.get(k) for k in ("probability_stop", "probability_target", "probability_timeout")]
+            values = [prediction.get(k) for k in ("probability_stop", "probability", "probability_timeout")]
             try:
                 values = np.array(values, dtype=float)
                 if not np.isfinite(values).all() or (values < 0).any() or not np.isclose(values.sum(), 1):
@@ -167,6 +158,8 @@ def trial_report(db, run_id, now, period_start=None, period_end=None):
     signals = db.scalars(select(SignalRow).where(SignalRow.symbol.in_(scoped_symbols),
                         SignalRow.time >= start, SignalRow.time < end)).all()
     signals = [s for s in signals if s.payload.get("source") in ("oanda", "coinbase")]
+    predictions = [s for s in signals if s.payload.get("model_version") in policy["models"] and
+                   s.payload.get("deployment_id") in trial["deployment_ids"] and s.payload.get("calibrated") is True]
     changed = any(s.detail["deployments"] != trial["deployment_ids"] or
                   "CONFIGURATION_CHANGED" in s.detail["issues"] or "ACCOUNT_NOT_READY" in s.detail["issues"] or
                   "DEPLOYMENT_EVIDENCE_INVALID_OR_UNRECORDED" in s.detail["issues"] for s in samples)

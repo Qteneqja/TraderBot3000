@@ -17,6 +17,8 @@ from app.models.tables import (
     CandleRow,
     Event,
     Instrument,
+    LearningRun,
+    LearningSchedule,
     ModelPrediction,
     ModelReview,
     ModelVersion,
@@ -25,8 +27,11 @@ from app.models.tables import (
     PaperDeploymentSlot,
     PaperRun,
     PaperSample,
+    PracticeAccount,
+    PracticeOrder,
     QuoteRow,
     SignalRow,
+    TradeOutcome,
 )
 from app.schemas.domain import aware
 from app.strategies.registry import STRATEGIES
@@ -81,7 +86,7 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0005" or db.get(Account, "PAPER") is None:
+        if revision != "0007" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
@@ -125,6 +130,44 @@ def overview(db: Session = Depends(get_db)):
 @app.get("/api/instruments")
 def instruments(db: Session = Depends(get_db)):
     return [serialize(i) for i in db.scalars(select(Instrument)).all()]
+
+
+@app.get("/api/learning")
+def learning_status(db: Session = Depends(get_db)):
+    schedules = db.scalars(select(LearningSchedule).order_by(LearningSchedule.created_at.desc())).all()
+    keys = ('model', 'family', 'status', 'validation', 'sample_counts', 'test', 'error_type')
+    # Project bounded JSON fields in SQL: never deserialize full replay curves on a dashboard poll.
+    fields = [LearningRun.id, LearningRun.state, LearningRun.scheduled_for,
+              LearningRun.result['error_type'].label('error_type'), LearningRun.result['final_test'].label('final_test')]
+    fields += [LearningRun.result['candidates'][i][key].label(f'c{i}_{key}') for i in range(4) for key in keys]
+    runs = db.execute(select(*fields).order_by(LearningRun.scheduled_for.desc()).limit(20)).mappings().all()
+    return {
+        "schedules": [{"id": s.id, "enabled": s.enabled, "symbol": s.plan["symbol"], "source": s.plan["source"],
+                       "families": s.plan["families"], "interval_days": s.plan["interval_days"],
+                       "next_due": aware(s.next_due).isoformat(), "validation_only": True} for s in schedules],
+        "runs": [{"id": r['id'], "state": r['state'], "scheduled_for": aware(r['scheduled_for']).isoformat(),
+                  "error_type": r['error_type'], "final_test": r['final_test'],
+                  "candidates": [{key: r[f'c{i}_{key}'] for key in keys} for i in range(4) if r[f'c{i}_family']],
+                  "execution_authority": False} for r in runs],
+        "outcomes": [{"mode": mode, "status": status, "count": count} for mode, status, count in db.execute(
+            select(TradeOutcome.mode, TradeOutcome.status, func.count()).group_by(TradeOutcome.mode, TradeOutcome.status))],
+        "promotion": "EXPLICIT_OPERATOR_APPROVAL_ONLY", "live_execution": "UNSUPPORTED",
+    }
+
+
+@app.get("/api/practice-status")
+def practice_status(db: Session = Depends(get_db)):
+    from app.brokers.reconciliation import account_key
+
+    current = account_key(get_settings().oanda_account_id)
+    rows = db.scalars(select(PracticeAccount).order_by(PracticeAccount.id)).all()
+    return [{"account_reference": row.id[:12], "current": row.id == current, "currency": row.currency,
+             "reconciled": row.reconciled, "suspended": row.suspended,
+             "synchronized_at": aware(row.synchronized_at).isoformat(),
+             "approval_scope": row.approval.get("scope", "NOT_APPROVED"),
+             "order_states": {state: count for state, count in db.execute(select(PracticeOrder.state, func.count())
+                              .where(PracticeOrder.account_id == row.id).group_by(PracticeOrder.state))}}
+            for row in rows]
 
 
 @app.get("/api/data-coverage")
@@ -173,10 +216,19 @@ def orders(db: Session = Depends(get_db)):
 
 
 @app.get("/api/models")
-def models(db: Session = Depends(get_db)):
-    return [
-        serialize(m) for m in db.scalars(select(ModelVersion).order_by(ModelVersion.created_at.desc())).all()
-    ]
+def models(limit: int = Query(50, ge=1, le=100), db: Session = Depends(get_db)):
+    keys = ("family", "symbol", "source", "strategy", "timeframe", "evaluation_mode", "validation", "test", "sample_counts", "limitations")
+    return [{"id": m.id, "status": m.status, "created_at": aware(m.created_at).isoformat(),
+             "metadata_json": {k: m.metadata_json.get(k) for k in keys}}
+            for m in db.scalars(select(ModelVersion).order_by(ModelVersion.created_at.desc()).limit(limit)).all()]
+
+
+@app.get("/api/models/{version_id}")
+def model_details(version_id: str, db: Session = Depends(get_db)):
+    model = db.get(ModelVersion, version_id)
+    if model is None:
+        raise HTTPException(404, "Unknown model version")
+    return serialize(model)
 
 
 @app.get("/api/predictions")

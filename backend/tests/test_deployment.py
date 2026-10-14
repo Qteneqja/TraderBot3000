@@ -73,6 +73,7 @@ def deployment_store(store, monkeypatch):
         "class_frequency_baseline": {p: {"multiclass_brier": 0.3} for p in ("validation", "test")},
     }
     metadata["coverage"] = {"research_ready": True, "input_candles": metadata["input_candles"], "session_coverage": 1}
+    metadata["walk_forward"] = [{"status": "EVALUATED"}] * 3  # Mock evidence for orchestration only.
     monkeypatch.setattr("app.machine_learning.assessment.load_verified", lambda *args: TestEstimator())
     monkeypatch.setattr(
         "app.machine_learning.assessment.evaluate_registered", lambda *args: research_fixture()

@@ -1,5 +1,5 @@
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -16,15 +16,20 @@ async def deliver(db: Session, settings: Settings, client: httpx.AsyncClient):
     token = settings.telegram_bot_token.get_secret_value()
     if not token or not settings.telegram_chat_id:
         return
-    rows = db.scalars(
-        select(Notification)
+    identifiers = db.scalars(
+        select(Notification.id)
         .where(Notification.status == "PENDING")
         .limit(20)
-        .with_for_update(skip_locked=True)
     ).all()
-    for event in rows:
-        event.status, event.attempts = "SENDING", event.attempts + 1
+    db.rollback()
+    for identifier in identifiers:
+        claimed = db.execute(update(Notification).where(Notification.id == identifier,
+            Notification.status == "PENDING").values(status="SENDING", attempts=Notification.attempts + 1)
+            .returning(Notification.id)).scalar_one_or_none()
         db.commit()  # Ambiguous delivery is quarantined, never blindly retried.
+        if claimed is None:
+            continue
+        event = db.get(Notification, identifier)
         try:
             response = await client.post(
                 f"https://api.telegram.org/bot{token}/sendMessage",

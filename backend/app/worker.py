@@ -104,7 +104,9 @@ async def trading_worker():
     settings = get_settings()
     worker_id, sequence = str(uuid4()), 0
     if settings.trading_mode == "OANDA_PRACTICE":
-        raise RuntimeError("Practice gateway is not enabled; complete the readiness checklist first")
+        from app.brokers.worker import practice_worker
+
+        return await practice_worker()
     with SessionLocal() as db:
         reconcile(db, datetime.now(timezone.utc))
     while True:
@@ -164,6 +166,15 @@ async def trading_worker():
         except Exception as exc:
             record("paper_recorder_error", {"error_type": type(exc).__name__})
         sequence += 1
+        if settings.enable_notifications:
+            try:
+                from app.notifications.telegram import deliver
+
+                async with httpx.AsyncClient(timeout=15) as client:
+                    with SessionLocal() as db:
+                        await deliver(db, settings, client)
+            except Exception as exc:
+                record("notification_worker_error", {"error_type": type(exc).__name__})
         if sequence % 360 == 0:
             try:
                 from app.execution.trials import export_periodic_reports

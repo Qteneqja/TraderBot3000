@@ -103,6 +103,9 @@ def assess_model(db, version_id, root, settings):
         days = 0
     checks = {
         "PAPER_RESEARCH_MODE": settings.trading_mode == "PAPER",
+        "FINAL_TEST_EVALUATED": metadata.get("evaluation_mode", "FULL") == "FULL",
+        "WALK_FORWARD_VERIFIED": len(metadata.get("walk_forward", [])) == policy["walk_forward_folds"]
+        and all(f.get("status") == "EVALUATED" for f in metadata.get("walk_forward", [])),
         "ARTIFACT_INTEGRITY": artifact_ok,
         "POLICY_PREDECLARED_AND_UNCHANGED": metadata.get("acceptance_policy") == policy,
         "REAL_MARKET_SOURCE": metadata.get("source") in ("oanda", "coinbase"),
@@ -157,9 +160,9 @@ def assess_model(db, version_id, root, settings):
     inserted = db.execute(
         insert(ModelReview)
         .values(id=review_id, model_id=version.id, status=report["status"], report=report)
-        .on_conflict_do_nothing(index_elements=["id"])
-    )
-    if inserted.rowcount:
+        .on_conflict_do_nothing(index_elements=["id"]).returning(ModelReview.id)
+    ).scalar_one_or_none()
+    if inserted is not None:
         db.add(
             Event(
                 kind="model_assessed",

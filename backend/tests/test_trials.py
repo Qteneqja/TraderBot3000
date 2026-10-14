@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.execution.recorder import record_sample, start_run
 from app.execution.trials import approve_policy, export_periodic_reports, proposed_policy, trial_report
 from app.machine_learning.deployment import deactivate
-from app.models.tables import Account, Event, PaperRun
+from app.models.tables import Account, Event, ModelPrediction, OrderRow, PaperRun, SignalRow
 
 store = test_deployment.store
 deployment_store = test_deployment.deployment_store
@@ -80,3 +80,31 @@ def test_recorder_suspends_bound_trial_on_invalid_evidence(deployment_store):
         record_sample(db, settings, now, "test", 0, 1000000000)
         assert db.get(Account, "PAPER").suspended
         assert trial_report(db, run, now + timedelta(seconds=1))["status"] == "TERMINATION_REQUIRED"
+
+
+def test_trial_uses_authoritative_signal_even_when_shadow_record_already_exists(deployment_store):
+    engine, candidate, _, settings, now, reviews = deployment_store
+    with Session(engine) as db:
+        deployment = test_deployment.deploy(db, settings, now, reviews)
+        policy = proposed_policy(settings, ["TEST-ONLY-first"])
+        approval = approve_policy(db, policy, settings, "operator", "mock evidence test", now)
+        run = start_run(db, settings, [candidate.symbol], now, approval)
+        payload = {"source": "oanda", "model_version": "TEST-ONLY-first", "deployment_id": deployment,
+                   "calibrated": True, "probability": ".8", "probability_stop": ".1", "probability_timeout": ".1"}
+        db.add(SignalRow(id="actual-test", time=now + timedelta(seconds=1), symbol=candidate.symbol,
+                         strategy="trend", status="APPROVED", payload=payload, reasons=[]))
+        db.add(ModelPrediction(model_id="TEST-ONLY-first", candidate_id="actual-test", symbol=candidate.symbol,
+                               time=now + timedelta(seconds=1), quote_time=now, mode="SHADOW",
+                               prediction={"probability_target": .2}, candidate={}))
+        db.flush()
+        db.add(OrderRow(id="actual-test", signal_id="actual-test", mode="PAPER", state="CLOSED",
+                        symbol=candidate.symbol, direction="LONG", units=1, entry=candidate.entry,
+                        stop=candidate.stop, target=candidate.target, planned_risk=1,
+                        opened_at=now + timedelta(seconds=1), expires_at=now + timedelta(minutes=60),
+                        closed_at=now + timedelta(seconds=2), close_reason="TAKE_PROFIT", pnl=1,
+                        fees_paid=0, execution={"deployment_id": deployment}))
+        db.commit()
+        report = trial_report(db, run, now + timedelta(seconds=3))
+        assert report["predictions"] == report["closed_trades"] == 1
+        assert report["calibration_closed_scoped_fills_only"]["multiclass_brier"] == pytest.approx(.06)
+        assert report["status"] == "INSUFFICIENT_EVIDENCE"

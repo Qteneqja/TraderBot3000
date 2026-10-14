@@ -136,6 +136,7 @@ def test_passing_research_checks_never_promote_a_model(monkeypatch):
     }
     # Fake evidence only exercises orchestration. Production always verifies trusted artifacts.
     metadata["coverage"] = {"research_ready": True, "input_candles": metadata["input_candles"], "session_coverage": 1}
+    metadata["walk_forward"] = [{"status": "EVALUATED"}] * 3  # Mock evidence for orchestration only.
     calls = []
     monkeypatch.setattr("app.machine_learning.assessment.load_verified", lambda *args: None)
 

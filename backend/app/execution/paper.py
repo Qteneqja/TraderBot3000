@@ -12,6 +12,7 @@ from app.models.tables import (
     Account,
     Event,
     Instrument,
+    Notification,
     OrderEvent,
     OrderRow,
     QuoteRow,
@@ -77,6 +78,10 @@ def transition(db: Session, order: OrderRow, state: str, detail=""):
         raise ValueError(f"Invalid order transition {order.state} -> {state}")
     order.state = state
     db.add(OrderEvent(order_id=order.id, state=state, detail=detail))
+    if state in ("FILLED", "CLOSED") and order.execution.get("deployment_id"):
+        identifier = f"paper:{order.id}:{state}"
+        if db.get(Notification, identifier) is None:
+            db.add(Notification(id=identifier, text=f"PAPER {state}: {order.symbol} {order.direction}; order {order.id}"))
 
 
 def reconcile(db: Session, now: datetime):
@@ -213,6 +218,7 @@ def submit(db: Session, candidate: Candidate, quote: Quote, settings: Settings, 
             "quote_ask": str(quote.ask),
             "quoted_full_spread_times_units": str((quote.ask - quote.bid) * decision.units),
             "entry_adverse_slippage_cost": str(rules.slippage * decision.units),
+            "account_equity_at_entry": str(state.equity),
             "fee_rate": str(settings.paper_fee_rate),
             "slippage": str(rules.slippage),
             "financing_per_bar": str(settings.paper_financing_per_unit_per_bar),

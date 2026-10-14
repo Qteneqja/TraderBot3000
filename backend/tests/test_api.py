@@ -25,6 +25,12 @@ def test_dashboard_and_auth(tmp_path):
             assert overview["mode"] == "PAPER" and overview["quotes"] == []
             assert client.get("/api/candles").json()["candles"] == []
             assert client.get("/api/data-coverage").json() == []
+            assert client.get("/api/practice-status").json() == []
+            learning = client.get("/api/learning").json()
+            assert learning['runs'] == learning['schedules'] == learning['outcomes'] == []
+            assert learning['promotion'] == 'EXPLICIT_OPERATOR_APPROVAL_ONLY'
+            assert client.post('/api/learning').status_code == 405
+            assert client.get('/api/models?limit=101').status_code == 422
             assert client.post("/api/admin/suspend").status_code == 503
             assert client.post("/api/live/activate").status_code == 404
             assert len(client.get("/api/strategies").json()) == 6

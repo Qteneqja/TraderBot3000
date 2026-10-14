@@ -72,6 +72,17 @@ services:
       retries: 3
     depends_on:
       backend: {condition: service_healthy}
+  learning-worker:
+    <<: *backend
+    command: ["python", "-m", "app.machine_learning.worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck", "learning"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    depends_on:
+      backend: {condition: service_healthy}
 volumes:
   postgres-data:
   research-data:

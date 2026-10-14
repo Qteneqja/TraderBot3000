@@ -217,3 +217,89 @@ class Notification(Base):
     text: Mapped[str] = mapped_column(String(4096))
     status: Mapped[str] = mapped_column(String(24), default="PENDING")
     attempts: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PracticeAccount(Base):
+    __tablename__ = "practice_accounts"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    currency: Mapped[str] = mapped_column(String(3))
+    cursor: Mapped[str] = mapped_column(String(32))
+    synchronized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reconciled: Mapped[bool] = mapped_column(Boolean, default=False)
+    suspended: Mapped[bool] = mapped_column(Boolean, default=True)
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    risk: Mapped[dict] = mapped_column(JSON, default=dict)
+    approval: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class PracticeOrder(Base):
+    __tablename__ = "practice_orders"
+    __table_args__ = (
+        UniqueConstraint("account_id", "signal_id", name="uq_practice_account_signal"),
+        UniqueConstraint("account_id", "client_id", name="uq_practice_account_client"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("practice_accounts.id"), index=True)
+    signal_id: Mapped[str] = mapped_column(String(64))
+    client_id: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(24), index=True)
+    request: Mapped[dict] = mapped_column(JSON)
+    request_sha256: Mapped[str] = mapped_column(String(64))
+    candidate: Mapped[dict] = mapped_column(JSON)
+    units: Mapped[Decimal] = mapped_column(Numeric(24, 10))
+    planned_risk: Mapped[Decimal] = mapped_column(Numeric(24, 10))
+    broker_order_id: Mapped[str | None] = mapped_column(String(64))
+    trade_id: Mapped[str | None] = mapped_column(String(64))
+    entry: Mapped[Decimal | None] = mapped_column(Numeric(24, 10))
+    realized_pnl: Mapped[Decimal | None] = mapped_column(Numeric(24, 10))
+    fees_paid: Mapped[Decimal] = mapped_column(Numeric(24, 10), default=Decimal(0))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    exit: Mapped[Decimal | None] = mapped_column(Numeric(24, 10))
+    close_reason: Mapped[str | None] = mapped_column(String(48))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PracticeTransaction(Base):
+    __tablename__ = "practice_transactions"
+    account_id: Mapped[str] = mapped_column(ForeignKey("practice_accounts.id"), primary_key=True)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict] = mapped_column(JSON)
+
+
+class TradeOutcome(Base):
+    __tablename__ = "trade_outcomes"
+    __table_args__ = (UniqueConstraint("mode", "order_id", name="uq_outcome_mode_order"),)
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mode: Mapped[str] = mapped_column(String(24))
+    order_id: Mapped[str] = mapped_column(String(64))
+    model_id: Mapped[str | None] = mapped_column(ForeignKey("model_versions.id"), index=True)
+    closed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(32))
+    detail: Mapped[dict] = mapped_column(JSON)
+    detail_sha256: Mapped[str] = mapped_column(String(64))
+
+
+class LearningSchedule(Base):
+    __tablename__ = "learning_schedules"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    operator: Mapped[str] = mapped_column(String(120))
+    reason: Mapped[str] = mapped_column(String(512))
+    plan: Mapped[dict] = mapped_column(JSON)
+    next_due: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class LearningRun(Base):
+    __tablename__ = "learning_runs"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    schedule_id: Mapped[str] = mapped_column(ForeignKey("learning_schedules.id"), index=True)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    worker_id: Mapped[str | None] = mapped_column(String(36))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result: Mapped[dict] = mapped_column(JSON, default=dict)

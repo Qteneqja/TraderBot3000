@@ -26,6 +26,8 @@ from app.strategies.registry import evaluate
 SCOPE_KEYS = ("symbol", "strategy", "timeframe", "source")
 PREREQUISITES = {
     "PAPER_RESEARCH_MODE",
+    "FINAL_TEST_EVALUATED",
+    "WALK_FORWARD_VERIFIED",
     "ARTIFACT_INTEGRITY",
     "POLICY_PREDECLARED_AND_UNCHANGED",
     "REAL_MARKET_SOURCE",

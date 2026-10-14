@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.machine_learning.candidate_training import CANDIDATE_FEATURES, EVENT_SCHEMA, prediction_features
+from app.machine_learning.contracts import research_code_contract
 from app.models.tables import Event, ModelPrediction, ModelVersion
 
 
@@ -43,6 +44,8 @@ def load_verified(version, root):
         raise ModelUnavailable("Registry identifier differs from artifact version")
     if metadata.get("event_schema") != EVENT_SCHEMA or metadata.get("features") != CANDIDATE_FEATURES:
         raise ModelUnavailable("Model event/feature schema is incompatible")
+    if metadata.get("research_code") != research_code_contract():
+        raise ModelUnavailable("Research feature/strategy/risk implementation changed; new evaluation required")
     path = artifact_path(metadata, root)
     # Local artifact directory and registry are operator-controlled; hashes are integrity, not trust signatures.
     bundle = joblib.load(path)

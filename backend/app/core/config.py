@@ -22,12 +22,15 @@ class Settings(BaseSettings):
     oanda_api_key: SecretStr = SecretStr("")
     oanda_account_id: str = ""
     oanda_environment: Literal["practice"] = "practice"
+    oanda_division: Literal["UNVERIFIED", "CA"] = "UNVERIFIED"
     llm_provider: Literal["deepseek", "openai"] = "deepseek"
     llm_model: str = "deepseek-flash"
     deepseek_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
     telegram_bot_token: SecretStr = SecretStr("")
     telegram_chat_id: str = ""
+    enable_notifications: bool = False
+    enable_drift_suspension: bool = False
     risk_per_trade: Decimal = Field(default=Decimal("0.005"), gt=0, le=Decimal("0.005"))
     max_daily_loss: Decimal = Field(default=Decimal("0.02"), gt=0, le=Decimal("0.02"))
     max_weekly_loss: Decimal = Field(default=Decimal("0.05"), gt=0, le=Decimal("0.05"))
