@@ -40,9 +40,17 @@ Each approximately ten-second worker cycle persists a deduplicated sample with U
 
 Healthy duration is credited only between consecutive healthy samples from the same worker, with unchanged deployments and matching wall/monotonic intervals no greater than 30 seconds. Restarts, skipped cycles, clock discrepancies, stale/wrong-source quotes, worker errors, suspended/unreconciled accounts and changed configuration earn no healthy time. Active deployments must still pass evidence checks, belong to recorded feed scopes, and have fresh completed candles. Model-observed duration additionally requires a current paper deployment. A quote-only recording without models is infrastructure evidence only. No model trades are fabricated to improve the counters.
 
-Fixture runs are labeled `FIXTURE_DIAGNOSTIC` and earn zero healthy/model-observed time. Market closures are presently reported as feed gaps; session/calendar classification remains unfinished. Sampled health does not prove uninterrupted availability between polls. Deployment changes remain visible in individual samples and break continuity; a run spanning several deployments is not proof that any single model completed a trial. There is no automatic duration threshold, soak acceptance, or broker promotion.
+Fixture runs are labeled `FIXTURE_DIAGNOSTIC` and earn zero healthy/model-observed time. Recorder market closures currently appear as feed gaps; historical coverage uses a separate reviewed calendar. Sampled health does not prove uninterrupted availability between polls. Deployment changes break continuity; a run spanning several deployments cannot prove one model completed its trial. Formal policy thresholds are described below. Reports never grant broker authority.
 
 Model lab and System health show read-only trials and recorder summaries. `/api/paper-deployments`, `/api/paper-runs`, and `/api/paper-runs/RUN_ID/samples` expose history; the samples endpoint returns the latest 100. Summary calculations use database aggregates rather than loading the full run into memory. Long-term retention/export and external outage alerts remain outstanding. Preserve the database volume; do not delete evidence to reset poor results.
+
+## Formal performance trial
+
+Before performance collection, generate a policy with trial-policy --models VERSION --output PATH, review it, explicitly trial-approve PATH --operator NAME --reason TEXT, then start paper-record-start --symbols SYMBOL --trial-policy POLICY_ID using the identifier printed by approval. An eligible explicitly deployed model and a flat reconciled PAPER account are required. Stop any existing infrastructure recording first, preserving its history. No formal trial is currently approved or running.
+
+Fixed proposed criteria: 30 wall days, 20 model-observed days, 100 closed trades, 20 active exit days, profit factor at least 1.2, positive net P&L, maximum sampled drawdown .08 and target calibration error at most .05. The policy binds exact models, runtime, risk and costs; approval cannot weaken it. Deployment/configuration/evidence changes suspend new entries. Existing position management continues.
+
+trial-report RUN --output UNIQUE_PATH reports exact run/deployment-scoped predictions, decisions, fills, closed outcomes, costs, net P&L, confidence calibration and recorder continuity. Predictions come from authoritative signal payloads rather than potentially preexisting shadow rows. Calibration is labeled fill-selected evidence; sampled equity cannot establish intratick drawdown. Reports require real elapsed time and actual samples. The worker exports immutable daily/weekly reports hourly for formal runs. No report has fabricated trial performance.
 
 ## Verification boundaries
 

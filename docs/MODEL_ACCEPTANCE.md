@@ -1,11 +1,14 @@
 # Research acceptance and remaining deployment gates
 
-Current policy is **research-screen-v2**. It retains every v1 economic, risk,
+Current policy is **research-screen-v3**. It retains every v1 economic, risk,
 calibration and statistical threshold and adds a 99% minimum completeness against
 the declared session estimate plus at least 180 usable UTC days. Training artifacts
 now embed the original coverage report/manifest. Assessment and activation require
-that report to match the artifact's input candles. Older v1 reviews cannot be
-reused under v2. The following v1 methodology describes the unchanged economic
+that report to match the artifact's input candles. V3 additionally requires three
+evaluated purged expanding walk-forward folds before the sealed final partition.
+Validation-only models cannot qualify or expose final-test replay. Artifacts bind
+the evaluated feature, strategy, simulator and risk source. Older v1/v2 reviews
+cannot be reused under v3. The following v1 methodology describes the unchanged economic
 screen; no profitability threshold was relaxed.
 
 The `research-screen-v1` policy is a conservative engineering screen, not an empirically established promise of profitability or a completed execution-approval system. It is included in each new candidate artifact and dataset version before fitting. Its hash includes the risk settings; altering thresholds after viewing final outcomes invalidates reuse of the original assessment policy. Older artifacts lacking a declared policy must be retrained as a new experiment. Never retrofit a policy into an old manifest or repeatedly optimize against the test partition.

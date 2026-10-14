@@ -75,3 +75,32 @@ Verification after import: 117 backend tests passed including PostgreSQL cases,
 no new upgrade operations, and dashboard/API/worker smoke checks passed. Existing
 Starlette and sparse-class synthetic calibration warnings remain. Application
 code and trading configuration were unchanged by this operation.
+
+## Extended Canada audit: October 14, 2026 UTC
+
+All sixteen series pass the 180-usable-day and 99% declared-session research coverage screen. This does not qualify any model or establish execution quality. The confirmed Canadian account uses New York DST, Sunday 17:05 to Friday 16:59, with daily 16:59-17:05 breaks. Partly tradable aligned candles are expected. Only the verified Christmas 2025 and New Year 2026 holiday overrides are included; other historical variations, including 2024, remain unexplained. Missing bars are preserved, and training excludes crossing windows.
+
+Sources: [Canada regular hours](https://www.oanda.com/ca-en/trading/hours-of-operation/) and [dated holiday notices](https://www.oanda.com/ca-en/trading/holiday-trading-hours/), verified October 14. OANDA_DIVISION defaults UNVERIFIED; CA is limited to confirmed Canadian EUR_USD/GBP_USD research. Actual execution still requires fresh broker tradeability.
+
+Bounds end exclusively at 2026-10-14 00:00 UTC. FX hourly starts 2024-10-14; other FX and crypto 5m/1h start 2025-10-14; crypto 1m/15m start 2026-04-14.
+
+| Instrument | Timeframe seconds | Candles | Usable days | Completeness | Unexplained missing |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| EUR_USD | 60 | 370,662 | 311 | 99.663% | 1,252 |
+| EUR_USD | 300 | 74,589 | 259 | 99.996% | 3 |
+| EUR_USD | 900 | 24,864 | 259 | 100.000% | 0 |
+| EUR_USD | 3600 | 12,432 | 302 | 99.615% | 48 |
+| GBP_USD | 60 | 371,043 | 311 | 99.764% | 876 |
+| GBP_USD | 300 | 74,577 | 259 | 99.980% | 15 |
+| GBP_USD | 900 | 24,863 | 259 | 99.996% | 1 |
+| GBP_USD | 3600 | 12,432 | 302 | 99.615% | 48 |
+| BTC-USD | 60 | 263,089 | 183 | 99.836% | 431 |
+| BTC-USD | 300 | 104,971 | 365 | 99.858% | 149 |
+| BTC-USD | 900 | 17,543 | 183 | 99.858% | 25 |
+| BTC-USD | 3600 | 8,750 | 359 | 99.886% | 10 |
+| ETH-USD | 60 | 263,082 | 183 | 99.834% | 438 |
+| ETH-USD | 300 | 104,971 | 365 | 99.858% | 149 |
+| ETH-USD | 900 | 17,543 | 183 | 99.858% | 25 |
+| ETH-USD | 3600 | 8,750 | 359 | 99.886% | 10 |
+
+Immutable full reports in the research volume: data/reports/canada-v1-coverage-SYMBOL-TIMEFRAME-START-20261014.json. Summary canada-v1-provider-coverage-summary-20261014.json includes per-report SHA256. Earlier approximate-calendar reports remain preserved. All reports say RESEARCH_ONLY and qualification NOT_ASSESSED. Training schedules currently support five-minute candidates only; collecting other resolutions does not establish trained models at those resolutions. Raw data/reports are ignored by Git.

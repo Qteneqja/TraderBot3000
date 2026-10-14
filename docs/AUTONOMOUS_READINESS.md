@@ -8,15 +8,15 @@ manifest, usable days/windows, duplicate/future checks, session estimates, missi
 timestamps and observed close spreads. Model lab shows stored candle counts and
 date ranges independently of its 300-candle chart. Dates alone are never approval.
 
-The weekly OANDA estimate uses New York time and DST, based on
-[OANDA's published hours](https://www.oanda.com/us-en/trading/hours-of-operation/).
-It is approximate: [Canadian daily breaks](https://www.oanda.com/ca-en/trading/hours-of-operation/)
-and historical holiday overrides still need account-specific validation. Unknown
-holidays are reported as unexplained gaps. This is not execution-quality attestation.
+The operator confirmed OANDA Canada. Coverage now includes documented New York
+DST, daily breaks and verified Christmas 2025/New Year 2026 overrides. Older
+approximate reports remain preserved; unresolved historical holiday gaps are not
+guessed. See [the complete sixteen-series audit](HISTORICAL_DATA.md). This is not
+execution-quality attestation.
 
-In addition to the full-year five-minute history, six-month provider downloads
-for one-minute, fifteen-minute and hourly data completed for all four instruments,
-2026-04-14 through 2026-10-14. Their detailed coverage assessments remain pending.
+All sixteen downloaded series pass research coverage requirements: one year for
+most series, two years for FX hourly and six months for crypto 1m/15m. Model
+qualification is separate. Scheduled training currently uses five-minute data only.
 
 ## Actual real-data model results
 
@@ -38,8 +38,11 @@ doubled-cost portfolio assessments are persisted in the database reviews and
 research volume. No execution threshold changed. Final test results must not be
 used for subsequent tuning or algorithm selection. Future comparisons need an
 explicit validation-only selection plan and a genuinely untouched final period.
-Crypto models, gradient-boosted comparisons, walk-forward selection, independently
-validated fees/costs and regime robustness remain unfinished.
+New validation-only comparisons include logistic, Random Forest, LightGBM and
+XGBoost with three pre-test purged expanding folds and policy v3. Final scores are
+sealed, including direct replay. Weekly jobs run separately from trading; see
+[controlled learning](CONTROLLED_LEARNING.md). Real costs, feature/strategy tuning,
+prospective final evaluation and regime robustness remain research requirements.
 
 ## Formal paper trials
 
@@ -93,20 +96,26 @@ and rechecked. No account ID or credentials are in this document.
 docker compose exec backend python -m app.cli practice-check --output data/reports/practice-readiness.json
 ```
 
-Read-only readiness does not enable submission. Durable reservations, transaction
-reconciliation, uncertain submission/closure recovery, complete worker integration,
-and explicitly authorized practice lifecycle testing remain unfinished. Direct
-submission remains disabled. No practice order, notification or live-money action
-was performed.
+Read-only readiness does not enable submission. Durable account-locked reservations,
+cursor replay, uncertain-send quarantine, protected-fill verification, conservative
+partial-reduction handling, net-cost closure accounting and practice worker recovery
+are implemented and fault-tested with mocks. Actual read-only cursor reconciliation
+reached 810 without discrepancies and retained suspension. The separately authorized
+external lifecycle test, notification delivery and sustained recovery remain
+unverified. See [broker acceptance](BROKER_INTEGRATION.md). No practice order,
+notification or live-money action was performed.
 
 ## Verification and continuation
 
-141 backend tests passed including PostgreSQL cases; 11 frontend tests passed;
-frontend production build and Ruff passed. Database migration/smoke verification
-must also pass for deployment. Trial orchestration uses explicitly mocked passing
-research evidence in tests, not actual eligible models. Real elapsed performance
-evidence is absent. Model promotions remain explicit. Learning outcome attribution,
-drift reports, scheduled retraining and comparison infrastructure remain pending.
+199 backend tests passed including PostgreSQL cases; 15 frontend tests passed;
+frontend production build, Ruff, schema 0007 consistency and stack smoke checks
+passed, including the common-period comparison and cashflow/summary regressions.
+Trial/gateway positive authority is explicitly mocked in
+tests. Real elapsed model-performance evidence is absent. Outcome attribution,
+two-window drift diagnostics, explicit suspension policy and a separate weekly
+research worker are implemented. Scheduled candidates cannot promote; prospective
+untouched final evaluation remains to be automated. Further model research and
+independent feature/strategy/cost/regime validation remain necessary.
 
 Local `.env` had been changed to live enabled and ten positions; restored to live
 disabled and the mandated three-position cap, preserving credentials and PAPER mode.

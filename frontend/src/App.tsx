@@ -8,6 +8,8 @@ import ModelReviews from './ModelReviews';
 import PaperTrials from './PaperTrials';
 import MarketQuote from './MarketQuote';
 import { DataCoverage } from './DataCoverage';
+import PracticeStatus from './PracticeStatus';
+import LearningStatus from './LearningStatus';
 import { useApi, type Candle, type Model, type Order, type Overview, type Signal, type Strategy, type System } from './api';
 
 const nav = [
@@ -119,6 +121,8 @@ export default function App() {
           <div className="table-scroll"><table><thead><tr>{['Instrument', 'Direction', 'Units', 'Entry', 'Stop', 'Target', 'Status', 'Fees paid', 'Net P&L'].map(c => <th key={c}>{c}</th>)}</tr></thead><tbody>{orders.data.map(o => <tr key={o.id}><td>{displaySymbol(o.symbol)}</td><td>{o.direction}</td><td>{o.units}</td><td>{price(o.entry, o.symbol)}</td><td>{price(o.stop, o.symbol)}</td><td>{price(o.target, o.symbol)}</td><td><Badge>{o.state}</Badge></td><td>{money(o.fees_paid)}</td><td>{o.pnl === null ? 'Open' : money(o.pnl)}</td></tr>)}</tbody></table></div>}</section>}
       {page === 'Strategies' && <div className="card-grid">{strategies.data?.map((s, i) => <section key={s.id} className="panel strategy-card"><div className="strategy-index">0{i+1}<Badge>RESEARCH · V{s.version}</Badge></div><h2>{s.name}</h2><p>Eligible in {s.regimes.map(human).join(', ')} conditions.</p><div className="check-row"><span>Validated trading edge</span><Badge tone="amber">NOT ESTABLISHED</Badge></div><small>Deterministic signals · Independent risk approval</small></section>)}</div>}
       {page === 'Model lab' && <DataCoverage/>}
+      {page === 'Model lab' && <LearningStatus/>}
+      {page === 'System health' && <PracticeStatus/>}
       {page === 'Model lab' && <section className="panel"><div className="panel-heading"><div className="panel-title"><Cpu size={18}/><h2>Model registry</h2></div><Badge>EXPLICIT PROMOTION ONLY</Badge></div>
         {!models.data?.length ? <Empty title="Evidence starts with research">No trained model has been registered. Import provider history, run chronological training, then inspect calibration and execution costs before deployment.</Empty> : models.data.map(m => <div className="model-record" key={m.id}><h3>{m.id} <Badge tone="amber">{m.status}</Badge></h3><p>{m.metadata_json.family} · {m.metadata_json.symbol} · {m.metadata_json.source}</p><div className="metric-row"><span>Brier score <strong>{m.metadata_json.test?.multiclass_brier.toFixed(4) ?? '—'}</strong></span><span>Log loss <strong>{m.metadata_json.test?.log_loss.toFixed(4) ?? '—'}</strong></span><span>Test observations <strong>{m.metadata_json.test?.samples ?? '—'}</strong></span></div><p>{m.metadata_json.limitations?.join(' · ')}</p></div>)}</section>}
       {page === 'Risk controls' && <><div className="risk-intro panel"><ShieldCheck size={32}/><div><h2>Risk has the final word.</h2><p>Controls are enforced by the backend. This dashboard is read-only. Changes require operator authentication and server-side validation.</p></div><Badge tone="green">LIVE DISABLED</Badge></div><div className="card-grid">{risk.data && Object.entries(risk.data).filter(([k]) => k !== 'live_enabled').map(([k, v]) => <section className="panel risk-card" key={k}><span>{human(k)}</span><strong>{typeof v === 'number' ? (k.includes('loss') || k.includes('risk') && !k.includes('reward') || k.includes('threshold') ? pct(v) : v) : String(v)}</strong><small>Enforced before every new entry</small></section>)}</div></>}
