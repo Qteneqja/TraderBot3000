@@ -21,6 +21,8 @@ jobs:
       - run: pip install -r backend/requirements.lock
       - run: pip install --no-deps -e backend
       - run: python -m pytest backend/tests -q
+        env:
+          TEST_POSTGRES_URL: postgresql+psycopg://aegis:test@localhost:5432/aegis
       - run: ruff check backend
       - name: Verify PostgreSQL migration and fixtures
         working-directory: backend

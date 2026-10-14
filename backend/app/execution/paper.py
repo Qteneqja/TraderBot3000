@@ -21,7 +21,7 @@ from app.risk_management.engine import InstrumentRules, RiskState, approve
 from app.schemas.domain import Candidate, Quote, aware
 
 D = Decimal
-ACTIVE = ("SUBMITTING", "UNKNOWN", "PENDING", "FILLED")
+ACTIVE = ("PROPOSED", "RISK_APPROVED", "SUBMITTING", "UNKNOWN", "PENDING", "FILLED")
 LEDGER_QUANTUM = D(".0000000001")
 
 
@@ -111,12 +111,13 @@ def mark_account(db: Session, account: Account, now: datetime, max_age=30):
         mark = quote.bid if o.direction == "LONG" else quote.ask
         unrealized += (mark - o.entry) * o.units * (1 if o.direction == "LONG" else -1)
     if fresh:
+        prior_equity = account.equity
         account.equity = money(account.balance + unrealized)
         day, week = now.date().isoformat(), f"{now.isocalendar().year}-{now.isocalendar().week:02d}"
         if account.day != day:
-            account.day, account.day_start = day, account.equity
+            account.day, account.day_start = day, max(prior_equity, account.equity)
         if account.week != week:
-            account.week, account.week_start = week, account.equity
+            account.week, account.week_start = week, max(prior_equity, account.equity)
         account.peak = max(account.peak, account.equity)
         account.updated_at = now
     return orders, fresh
@@ -128,8 +129,10 @@ def submit(db: Session, candidate: Candidate, quote: Quote, settings: Settings, 
     account = lock_account(db)
     existing = db.get(SignalRow, candidate.id)
     if existing:
+        order = db.get(OrderRow, candidate.id)
+        result = order.state if order else existing.status
         db.rollback()
-        return existing.status
+        return result
     instrument = db.get(Instrument, candidate.symbol)
     if instrument is None:
         db.rollback()
@@ -249,7 +252,8 @@ def monitor(db: Session, settings: Settings, now: datetime):
         # Financing is an explicit per-unit charge per started holding bar.
         bars = int((elapsed / D(order.execution["timeframe"])).to_integral_value(rounding=ROUND_CEILING))
         additional = max(0, bars - order.financing_bars)
-        financing = money(D(order.execution["financing_per_bar"]) * order.units * additional)
+        rate = D(order.execution["financing_per_bar"]) * order.units
+        financing = money(rate * (order.financing_bars + additional)) - money(rate * order.financing_bars)
         account.balance = money(account.balance - financing)
         order.fees_paid = money(order.fees_paid + financing)
         order.financing_bars += additional

@@ -50,7 +50,7 @@ def test_paper_lifecycle_and_duplicate_delivery():
         assert reconcile(db, now)
         s = s.model_copy(update={"id": "second-signal"})
         assert submit(db, s, q, settings, now) == "FILLED"
-        assert submit(db, s, q, settings, now) == "APPROVED"
+        assert submit(db, s, q, settings, now) == "FILLED"
         assert db.scalar(select(func.count()).select_from(OrderRow)) == 1
         db.rollback()
         exit_quote = q.model_copy(
