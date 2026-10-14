@@ -72,6 +72,7 @@ def deployment_store(store, monkeypatch):
         "test": {"target_calibration_error": 0.01, "multiclass_brier": 0.2},
         "class_frequency_baseline": {p: {"multiclass_brier": 0.3} for p in ("validation", "test")},
     }
+    metadata["coverage"] = {"research_ready": True, "input_candles": metadata["input_candles"], "session_coverage": 1}
     monkeypatch.setattr("app.machine_learning.assessment.load_verified", lambda *args: TestEstimator())
     monkeypatch.setattr(
         "app.machine_learning.assessment.evaluate_registered", lambda *args: research_fixture()

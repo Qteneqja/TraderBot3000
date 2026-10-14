@@ -107,6 +107,9 @@ def assess_model(db, version_id, root, settings):
         "POLICY_PREDECLARED_AND_UNCHANGED": metadata.get("acceptance_policy") == policy,
         "REAL_MARKET_SOURCE": metadata.get("source") in ("oanda", "coinbase"),
         "HISTORY_DURATION": days >= policy["minimum_history_days"],
+        "USABLE_DATA_COVERAGE": metadata.get("coverage", {}).get("research_ready") is True
+        and metadata.get("coverage", {}).get("input_candles") == manifest
+        and metadata.get("coverage", {}).get("session_coverage", 0) >= policy["minimum_session_coverage"],
         "CALIBRATION_SAMPLE_COUNT": metadata.get("sample_counts", {}).get("calibration", 0)
         >= policy["minimum_calibration_samples"],
         "THRESHOLD_AND_REWARD_FLOOR": settings.initial_probability_threshold >= Decimal(".8")

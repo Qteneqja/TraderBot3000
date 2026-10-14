@@ -18,6 +18,7 @@ from app.models.tables import (
     ModelVersion,
     PaperDeployment,
     PaperDeploymentSlot,
+    PaperRun,
 )
 from app.schemas.domain import aware
 from app.strategies.registry import evaluate
@@ -29,6 +30,7 @@ PREREQUISITES = {
     "POLICY_PREDECLARED_AND_UNCHANGED",
     "REAL_MARKET_SOURCE",
     "HISTORY_DURATION",
+    "USABLE_DATA_COVERAGE",
     "CALIBRATION_SAMPLE_COUNT",
     "THRESHOLD_AND_REWARD_FLOOR",
 }
@@ -190,6 +192,10 @@ def activate(db, version_id, review_id, root, settings, operator, reason, now, r
             slot = PaperDeploymentSlot(account_id=account.id, scope_key=key)
             db.add(slot)
         slot.deployment_id = deployment.id
+        trial = db.scalar(select(PaperRun).where(PaperRun.status == "RUNNING", PaperRun.account_id == account.id))
+        if trial and trial.contract.get("trial"):
+            account.suspended = True
+            db.add(Event(kind="paper_trial_suspended", detail={"run": trial.id, "reason": "DEPLOYMENT_CHANGED"}))
         db.add(
             Event(
                 kind="paper_model_rollback" if rollback_to else "paper_model_activated",
@@ -229,13 +235,17 @@ def deactivate(db, deployment_id, operator, reason):
     if not operator.strip() or len(operator) > 120 or not reason.strip() or len(reason) > 512:
         raise ValueError("Operator and reason are required (maximum 120 and 512 characters)")
     try:
-        lock_account(db)
+        account = lock_account(db)
         deployment = db.get(PaperDeployment, deployment_id)
         if deployment is None:
             raise ModelUnavailable("Unknown deployment")
         slot = db.get(PaperDeploymentSlot, ("PAPER", deployment.scope_key))
         if slot and slot.deployment_id == deployment_id:
             slot.deployment_id = None
+            trial = db.scalar(select(PaperRun).where(PaperRun.status == "RUNNING", PaperRun.account_id == account.id))
+            if trial and trial.contract.get("trial"):
+                account.suspended = True
+                db.add(Event(kind="paper_trial_suspended", detail={"run": trial.id, "reason": "DEPLOYMENT_CHANGED"}))
             db.add(
                 Event(
                     kind="paper_model_deactivated",

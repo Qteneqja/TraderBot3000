@@ -14,6 +14,7 @@ from app.database.session import get_db
 from app.market_data.store import load_candles
 from app.models.tables import (
     Account,
+    CandleRow,
     Event,
     Instrument,
     ModelPrediction,
@@ -124,6 +125,18 @@ def overview(db: Session = Depends(get_db)):
 @app.get("/api/instruments")
 def instruments(db: Session = Depends(get_db)):
     return [serialize(i) for i in db.scalars(select(Instrument)).all()]
+
+
+@app.get("/api/data-coverage")
+def data_coverage(db: Session = Depends(get_db)):
+    rows = db.execute(select(CandleRow.symbol, CandleRow.source, CandleRow.timeframe,
+                             func.count(), func.min(CandleRow.time), func.max(CandleRow.time))
+                      .group_by(CandleRow.symbol, CandleRow.source, CandleRow.timeframe)
+                      .order_by(CandleRow.symbol, CandleRow.source, CandleRow.timeframe)).all()
+    return [{"symbol": symbol, "source": source, "timeframe": timeframe, "candles": count,
+             "first": aware(first).isoformat(), "last": aware(last).isoformat(),
+             "classification": "SYNTHETIC_FIXTURE" if source == "fixture" else "PROVIDER_HISTORY",
+             "qualification": "NOT_ASSESSED"} for symbol, source, timeframe, count, first, last in rows]
 
 
 @app.get("/api/candles")
@@ -271,6 +284,15 @@ def paper_runs(db: Session = Depends(get_db)):
         run_report(db, row.id, datetime.now(timezone.utc))
         for row in db.scalars(select(PaperRun).order_by(PaperRun.started_at.desc()).limit(20)).all()
     ]
+
+
+@app.get("/api/paper-runs/{run_id}/evaluation")
+def paper_evaluation(run_id: str, db: Session = Depends(get_db)):
+    from app.execution.trials import trial_report
+
+    if db.get(PaperRun, run_id) is None:
+        raise HTTPException(404, "Unknown paper run")
+    return trial_report(db, run_id, datetime.now(timezone.utc))
 
 
 @app.get("/api/paper-runs/{run_id}/samples")

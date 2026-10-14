@@ -164,6 +164,14 @@ async def trading_worker():
         except Exception as exc:
             record("paper_recorder_error", {"error_type": type(exc).__name__})
         sequence += 1
+        if sequence % 360 == 0:
+            try:
+                from app.execution.trials import export_periodic_reports
+
+                with SessionLocal() as db:
+                    export_periodic_reports(db, datetime.now(timezone.utc), "data/reports")
+            except Exception as exc:
+                record("paper_trial_report_error", {"error_type": type(exc).__name__})
         await asyncio.sleep(10)
 
 

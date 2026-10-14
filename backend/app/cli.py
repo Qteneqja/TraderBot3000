@@ -81,6 +81,20 @@ def main():
         p.add_argument("--reason", required=True)
     p = commands.add_parser("paper-record-start")
     p.add_argument("--symbols", nargs="+", required=True)
+    p.add_argument("--trial-policy")
+    p = commands.add_parser("trial-policy")
+    p.add_argument("--models", nargs="*", default=[])
+    p.add_argument("--output", required=True)
+    p = commands.add_parser("trial-approve")
+    p.add_argument("policy")
+    p.add_argument("--operator", required=True)
+    p.add_argument("--reason", required=True)
+    p = commands.add_parser("trial-report")
+    p.add_argument("run_id")
+    p.add_argument("--output", required=True)
+    p = commands.add_parser("practice-check")
+    p.add_argument("--symbols", nargs="+", default=["EUR_USD", "GBP_USD"])
+    p.add_argument("--output", required=True)
     for name in ("paper-record-stop", "paper-record-report"):
         p = commands.add_parser(name)
         p.add_argument("run_id")
@@ -108,8 +122,18 @@ def main():
     p.add_argument("--spread", required=True, help="Explicit assumed full bid/ask spread")
     p.add_argument("--slippage", required=True, help="Explicit adverse slippage per fill")
     p.add_argument("--fee-rate", required=True, help="Explicit per-side notional fee rate")
+    p.add_argument("--financing-per-bar", default="0", help="Explicit per-unit financing assumption")
     p.add_argument("--output", default="model_artifacts")
     p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
+    p.add_argument("--start", help="Inclusive UTC dataset boundary")
+    p.add_argument("--end", help="Exclusive UTC dataset boundary")
+    p = commands.add_parser("data-report")
+    p.add_argument("--symbol", required=True)
+    p.add_argument("--source", required=True)
+    p.add_argument("--timeframe", type=int, default=300)
+    p.add_argument("--start", required=True)
+    p.add_argument("--end", required=True)
+    p.add_argument("--output", required=True)
     for command in ("download", "train", "export"):
         p = commands.add_parser(command)
         p.add_argument("--symbol", default="EUR_USD")
@@ -160,13 +184,56 @@ def main():
             print(
                 json.dumps({"deployment": result, "action": args.command, "broker_execution_allowed": False})
             )
+    elif args.command == "practice-check":
+        from app.brokers.oanda import OandaPractice
+        from app.brokers.validation import readiness_report
+
+        async def check():
+            settings = get_settings().model_copy(update={"trading_mode": "OANDA_PRACTICE", "demo_mode": False})
+            async with httpx.AsyncClient(timeout=30) as client:
+                return await readiness_report(OandaPractice(settings, client), settings.oanda_account_id, args.symbols)
+
+        path = Path(args.output)
+        if path.exists():
+            raise ValueError("Practice readiness reports are immutable; use a new output path")
+        report = asyncio.run(check())
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(json.dumps(report, indent=2))
+    elif args.command == "trial-policy":
+        from app.execution.trials import proposed_policy
+
+        path = Path(args.output)
+        if path.exists():
+            raise ValueError("Trial proposals are immutable; use a new output path")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        policy = proposed_policy(get_settings(), args.models)
+        path.write_text(json.dumps(policy, indent=2), encoding="utf-8")
+        print(json.dumps(policy, indent=2))
+    elif args.command == "trial-approve":
+        from app.execution.trials import approve_policy
+
+        with SessionLocal() as db:
+            print(approve_policy(db, json.loads(Path(args.policy).read_text()), get_settings(),
+                                 args.operator, args.reason, datetime.now(timezone.utc)))
+    elif args.command == "trial-report":
+        from app.execution.trials import trial_report
+
+        with SessionLocal() as db:
+            report = trial_report(db, args.run_id, datetime.now(timezone.utc))
+            path = Path(args.output)
+            if path.exists():
+                raise ValueError("Trial reports are immutable; use a new output path")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+            print(json.dumps(report, indent=2))
     elif args.command.startswith("paper-record-"):
         from app.execution.recorder import run_report, start_run, stop_run
 
         with SessionLocal() as db:
             now = datetime.now(timezone.utc)
             if args.command == "paper-record-start":
-                print(json.dumps({"run_id": start_run(db, get_settings(), args.symbols, now)}))
+                print(json.dumps({"run_id": start_run(db, get_settings(), args.symbols, now, args.trial_policy)}))
             elif args.command == "paper-record-stop":
                 stop_run(db, args.run_id, now)
                 print(json.dumps({"run_id": args.run_id, "status": "STOPPED"}))
@@ -222,6 +289,19 @@ def main():
                     }
                 )
             )
+    elif args.command == "data-report":
+        from app.market_data.coverage import coverage_report
+
+        start, end = datetime.fromisoformat(args.start), datetime.fromisoformat(args.end)
+        with SessionLocal() as db:
+            rows = load_candles(db, args.symbol, args.timeframe, args.source, 1_000_000, start=start, end=end)
+            report = coverage_report(rows, start, end, datetime.now(timezone.utc))
+            path = Path(args.output)
+            if path.exists():
+                raise ValueError("Coverage reports are immutable; use a new output path")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+            print(json.dumps({k: v for k, v in report.items() if k not in ("quality", "unexplained_missing_timestamps")}, indent=2))
     elif args.command == "train-candidates":
         from decimal import Decimal
 
@@ -232,12 +312,15 @@ def main():
             instrument = db.get(Instrument, args.symbol)
             if instrument is None:
                 raise ValueError("Unknown instrument")
-            rows = load_candles(db, args.symbol, args.timeframe, args.source, 1_000_000)
+            start = datetime.fromisoformat(args.start) if args.start else None
+            end = datetime.fromisoformat(args.end) if args.end else None
+            rows = load_candles(db, args.symbol, args.timeframe, args.source, 1_000_000, start=start, end=end)
             report = train_candidates(
                 rows,
                 instrument.tick_size,
                 args.strategy,
-                FillAssumptions(Decimal(args.spread), Decimal(args.slippage), Decimal(args.fee_rate)),
+                FillAssumptions(Decimal(args.spread), Decimal(args.slippage), Decimal(args.fee_rate),
+                                Decimal(args.financing_per_bar)),
                 Path(args.output),
                 args.family,
                 settings=get_settings(),

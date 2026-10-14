@@ -37,6 +37,8 @@ class InstrumentRules:
     slippage: Decimal | None = None
     fee_rate: Decimal = D(0)
     extra_cost_per_unit: Decimal = D(0)
+    gain_to_account: Decimal | None = None
+    position_to_account: Decimal | None = None
 
 
 def approve(
@@ -49,7 +51,10 @@ def approve(
 ) -> RiskDecision:
     reasons = []
     s, q, r = candidate, quote, rules
-    positive_rules = (r.tick, r.unit_step, r.min_units, r.max_spread, r.quote_to_account, r.margin_rate)
+    gain_conversion = r.quote_to_account if r.gain_to_account is None else r.gain_to_account
+    position_conversion = r.quote_to_account if r.position_to_account is None else r.position_to_account
+    positive_rules = (r.tick, r.unit_step, r.min_units, r.max_spread, r.quote_to_account, r.margin_rate,
+                      gain_conversion, position_conversion)
     slippage = r.tick if r.slippage is None else r.slippage
     if (
         any(not value.is_finite() or value <= 0 for value in positive_rules)
@@ -117,7 +122,8 @@ def approve(
             reasons.append("PROBABILITY_BELOW_THRESHOLD")
         # Conservative timeout loss; never allow a supplied timeout forecast to improve EV.
         cost = spread + slippage * 2 + fees
-        ev = s.probability * reward - s.probability_stop * distance - s.probability_timeout * distance - cost
+        ev = s.probability * reward * gain_conversion - (
+            s.probability_stop * distance + s.probability_timeout * distance + cost) * r.quote_to_account
         if ev <= 0:
             reasons.append("NONPOSITIVE_EXPECTED_VALUE")
     if r.quote_to_account <= 0 or r.margin_rate <= 0 or r.unit_step <= 0:
@@ -130,12 +136,12 @@ def approve(
     correlation_budget = state.equity * D("0.01") - state.correlated_risk
     budget = max(D(0), min(state.equity * settings.risk_per_trade, portfolio_budget, correlation_budget))
     leverage_room = max(D(0), state.equity * settings.max_leverage - state.gross_notional)
-    margin_units = max(D(0), state.free_margin) / (fill * r.quote_to_account * (r.margin_rate + r.fee_rate))
-    leverage_units = leverage_room / (fill * r.quote_to_account)
+    margin_units = max(D(0), state.free_margin) / (fill * position_conversion * (r.margin_rate + r.fee_rate))
+    leverage_units = leverage_room / (fill * position_conversion)
     size = min(budget / per_unit_risk, margin_units, leverage_units)
     units = (size / r.unit_step).to_integral_value(rounding=ROUND_FLOOR) * r.unit_step
     planned = units * per_unit_risk
-    notional = units * fill * r.quote_to_account
+    notional = units * fill * position_conversion
     if units < r.min_units:
         reasons.append("BELOW_MINIMUM_UNITS")
         if margin_units < r.min_units:

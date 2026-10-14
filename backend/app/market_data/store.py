@@ -42,12 +42,18 @@ def save_quote(db: Session, quote: Quote, now: datetime):
     return True
 
 
-def load_candles(db: Session, symbol: str, timeframe: int, source: str, limit=500):
+def load_candles(db: Session, symbol: str, timeframe: int, source: str, limit=500, *, start=None, end=None):
+    if (start is None) != (end is None):
+        raise ValueError("Provide both dataset start and end")
+    if start is not None and (start.tzinfo is None or end.tzinfo is None or start >= end):
+        raise ValueError("Dataset boundaries must be timezone-aware and increasing")
+    query = select(CandleRow).where(
+        CandleRow.symbol == symbol, CandleRow.timeframe == timeframe, CandleRow.source == source
+    )
+    if start is not None:
+        query = query.where(CandleRow.time >= start, CandleRow.time < end)
     rows = db.scalars(
-        select(CandleRow)
-        .where(CandleRow.symbol == symbol, CandleRow.timeframe == timeframe, CandleRow.source == source)
-        .order_by(CandleRow.time.desc())
-        .limit(limit)
+        query.order_by(CandleRow.time.desc()).limit(limit)
     ).all()
     return [
         Candle(

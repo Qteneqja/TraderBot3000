@@ -47,6 +47,21 @@ def test_known_sizing():
     assert result.expected_value == D(".01953")
 
 
+def test_distinct_broker_gain_loss_and_position_conversions():
+    s, q, state, rules, settings, now = setup_risk()
+    converted = replace(rules, quote_to_account=D('1.36'), gain_to_account=D('1.35'),
+                        position_to_account=D('1.355'))
+    result = approve(s, q, state, converted, settings, now)
+    assert result.approved and result.units == 3562
+    assert result.planned_risk == D('49.9933824')
+    assert result.expected_value == D('.0263483')
+    margin_limited = approve(s, q, state, replace(rules, position_to_account=D(1000)), settings, now)
+    assert margin_limited.approved and margin_limited.units == 9
+    assert margin_limited.planned_risk == D('.09288')
+    invalid = approve(s, q, state, replace(rules, gain_to_account=D('NaN')), settings, now)
+    assert invalid.reasons == ['INVALID_INSTRUMENT_RULES']
+
+
 @pytest.mark.parametrize(
     "change,reason",
     [

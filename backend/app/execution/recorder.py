@@ -25,9 +25,9 @@ from app.schemas.domain import aware
 MAX_INTERVAL_SECONDS = 30
 
 
-def start_run(db, settings, symbols, now):
+def start_run(db, settings, symbols, now, trial_policy_id=None):
     try:
-        lock_account(db)
+        account = lock_account(db)
         if settings.trading_mode != "PAPER":
             raise ValueError("Recorder requires PAPER mode")
         scopes = []
@@ -44,6 +44,10 @@ def start_run(db, settings, symbols, now):
             "classification": "FIXTURE_DIAGNOSTIC" if settings.demo_mode else "REAL_MARKET_PAPER",
             "maximum_interval_seconds": MAX_INTERVAL_SECONDS,
         }
+        if trial_policy_id:
+            from app.execution.trials import approved_contract
+
+            contract["trial"] = approved_contract(db, trial_policy_id, settings, symbols, now, account)
         current = db.scalar(
             select(PaperRun).where(PaperRun.account_id == "PAPER", PaperRun.status == "RUNNING")
         )
@@ -160,6 +164,14 @@ def record_sample(db, settings, now, worker_id, sequence, monotonic_ns, error_ty
                     raise ModelUnavailable("Completed candles unavailable or stale")
             except (ModelUnavailable, ValueError, KeyError, TypeError, ArithmeticError, OSError):
                 issues.append("DEPLOYMENT_EVIDENCE_INVALID_OR_UNRECORDED")
+        trial = run.contract.get("trial")
+        if trial and (deployments != trial["deployment_ids"] or any(issue in issues for issue in (
+            "CONFIGURATION_CHANGED", "ACCOUNT_NOT_READY", "DEPLOYMENT_EVIDENCE_INVALID_OR_UNRECORDED"
+        ))):
+            issues.append("TRIAL_TERMINATION_REQUIRED")
+            if not account.suspended:
+                account.suspended = True
+                db.add(Event(kind="paper_trial_suspended", detail={"run": run.id, "issues": issues}))
         # No active model is an honest infrastructure-only recording, not model soak evidence.
         healthy = not issues
         observed = D(0)

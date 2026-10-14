@@ -28,6 +28,19 @@ class OandaPractice:
         trades = await read_json(self.client, f"{self.base}/openTrades", headers=self.headers)
         return {"account": account["account"], "orders": orders["orders"], "trades": trades["trades"]}
 
+    async def account_details(self):
+        return await read_json(self.client, self.base, headers=self.headers)
+
+    async def account_properties(self):
+        return await read_json(self.client, "https://api-fxpractice.oanda.com/v3/accounts", headers=self.headers)
+
+    async def pricing(self, symbols):
+        return await read_json(self.client, f"{self.base}/pricing", headers=self.headers,
+                               params={"instruments": ",".join(symbols), "includeHomeConversions": "true"})
+
+    async def trade(self, trade_id):
+        return await read_json(self.client, f"{self.base}/trades/{trade_id}", headers=self.headers)
+
     async def lookup_order(self, client_id: str):
         return await read_json(self.client, f"{self.base}/orders/@{client_id}", headers=self.headers)
 

@@ -31,9 +31,10 @@ def risk_contract(settings):
 def acceptance_policy(settings=None):
     settings = settings or Settings(_env_file=None)
     policy = {
-        "version": "research-screen-v1",
+        "version": "research-screen-v2",
         "purpose": "Eligibility for further paper deployment review; no execution permission",
         "minimum_history_days": 180,
+        "minimum_session_coverage": 0.99,
         "minimum_partition_days": 30,
         "minimum_calibration_samples": 200,
         "minimum_partition_trades": 100,

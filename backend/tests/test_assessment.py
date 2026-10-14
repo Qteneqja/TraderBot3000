@@ -135,6 +135,7 @@ def test_passing_research_checks_never_promote_a_model(monkeypatch):
         "class_frequency_baseline": {p: {"multiclass_brier": 0.3} for p in ("validation", "test")},
     }
     # Fake evidence only exercises orchestration. Production always verifies trusted artifacts.
+    metadata["coverage"] = {"research_ready": True, "input_candles": metadata["input_candles"], "session_coverage": 1}
     calls = []
     monkeypatch.setattr("app.machine_learning.assessment.load_verified", lambda *args: None)
 

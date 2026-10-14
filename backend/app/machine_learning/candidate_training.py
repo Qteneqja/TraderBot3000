@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -16,6 +16,7 @@ from app.backtesting.simulator import FillAssumptions, simulate_trade
 from app.indicators.features import FEATURES, compute, frame
 from app.machine_learning.policy import acceptance_policy
 from app.machine_learning.training import estimator, scores
+from app.market_data.coverage import coverage_report
 from app.market_data.fingerprint import candle_manifest
 from app.schemas.domain import Quote
 from app.strategies.registry import STRATEGIES, candidates_from_row
@@ -161,6 +162,9 @@ def train_candidates(
         "family": family,
         "input_candles": candle_manifest(candles),
         "acceptance_policy": acceptance_policy(settings),
+        "coverage": coverage_report(candles, candles[0].time,
+                                    candles[-1].time + timedelta(seconds=candles[-1].timeframe),
+                                    datetime.now(timezone.utc)),
     }
     digest = hashlib.sha256(
         (samples.to_csv(index=False) + json.dumps(scope, sort_keys=True)).encode()

@@ -24,6 +24,7 @@ def test_dashboard_and_auth(tmp_path):
             overview = client.get("/api/overview").json()
             assert overview["mode"] == "PAPER" and overview["quotes"] == []
             assert client.get("/api/candles").json()["candles"] == []
+            assert client.get("/api/data-coverage").json() == []
             assert client.post("/api/admin/suspend").status_code == 503
             assert client.post("/api/live/activate").status_code == 404
             assert len(client.get("/api/strategies").json()) == 6
