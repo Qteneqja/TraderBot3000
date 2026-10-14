@@ -23,7 +23,7 @@ Domain schemas validate candles, quotes and candidates. Candles have unique sour
 
 The market worker streams quotes and polls completed historical candles. Strategies and features are causal. The paper gateway checks registry scope, calls the pure risk engine, records order transitions and handles quote-based exits. Portfolio replay reuses proposals, risk logic and the conservative exit resolver. It is isolated from database execution and brokers.
 
-Candidate model experiments use shared entry/stop/target proposals, immutable artifacts, explicit costs, input fingerprints and measured validation metrics. Only explicit shadow deployment and replacement are supported; registry SHADOW status never grants execution eligibility. Predictions persist independently from signals/orders. The older directional diagnostic has an incompatible event schema. ACTIVE promotion, drift handling and retraining remain incomplete.
+Candidate model experiments use shared entry/stop/target proposals, immutable artifacts, explicit costs, input fingerprints and measured validation metrics. Explicit shadow deployment and replacement are supported; registry SHADOW status never grants execution eligibility. Predictions persist independently from signals/orders. The older directional diagnostic has an incompatible event schema. Account-scoped paper trial approval is separate from immutable registry metadata. Drift handling, automatic retraining and broker promotion remain incomplete.
 
 Migrations 0002 and 0003 add shadow observations and persisted paper costs. Fees, financing, source identity and lifecycle state survive process restarts. Legacy open orders lacking execution metadata cause suspension rather than guessed reconstruction.
 

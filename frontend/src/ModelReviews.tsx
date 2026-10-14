@@ -13,7 +13,7 @@ export default function ModelReviews() {
     {!data?.length ? <div className="empty"><h3>No acceptance reviews yet</h3><p>Assess a registered model to inspect data provenance, calibration, net results and cost sensitivity.</p></div> : data.map(review =>
       <div className="model-record" key={review.id}>
         <h3>{review.model_id} <span className="badge amber">{review.status.replaceAll('_', ' ')}</span></h3>
-        <p>{review.report.policy.version} · {new Date(review.created_at).toLocaleString()} · Trading disabled</p>
+        <p>{review.report.policy.version} · {new Date(review.created_at).toLocaleString()} · Review alone grants no trading permission</p>
         <div className="metric-row"><span>Checks passed <strong>{Object.values(review.report.checks).filter(Boolean).length} / {Object.keys(review.report.checks).length}</strong></span></div>
         {review.report.reasons.length > 0 && <p>Unmet criteria: {review.report.reasons.map(reason => reason.toLowerCase().replaceAll('_', ' ')).join(' · ')}</p>}
         <p>Still required: {review.report.remaining_gates.join(' · ')}</p>

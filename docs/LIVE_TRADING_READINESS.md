@@ -7,7 +7,7 @@ Required before a separately authorized live implementation:
 - Complete practice gateway, durable reconciliation, unknown-order recovery, currency/margin rules and protection enforcement.
 - Validate licensed real history and execution-quality bid/ask costs; align training outcomes with actual entries.
 - Predeclare numerical acceptance criteria using research/validation data: net expectancy, confidence intervals, drawdown, calibration, trade counts, costs and regime stability. Do not tune on final tests.
-- Implement deployment/promotion/rollback, drift controls, verified sessions, quality circuit breakers and optional economic-event restrictions.
+- Extend the tested PAPER deployment/rollback workflow to independently reviewed broker promotion; implement drift controls, verified sessions, quality circuit breakers and optional economic-event restrictions.
 - Verify jurisdiction and actual broker/exchange account eligibility, including crypto order capabilities.
 - Run sustained paper/practice soak tests and network, restart, database, missing-protection and incident-recovery drills.
 - Add operator identity, auditable staged activation, separate live credentials, explicit caps, monitoring and tested restore procedures.

@@ -1,6 +1,6 @@
 # Risk management
 
-The pure `approve()` function has final authority over paper entry. Submission locks the account and requires an ACTIVE execution-validated model scoped to source/instrument/strategy/timeframe. Candidate-supplied calibration alone is insufficient. No deployed model ships with the app.
+The pure `approve()` function has final authority over paper entry. Submission locks the account and requires a current PAPER deployment scoped to source/instrument/strategy/timeframe. Its review, artifact, instrument, risk and cost contract are rechecked before inference. Candidates are reconstructed from stored completed candles; supplied confidence/features/protection and legacy ACTIVE flags cannot authorize a trade. No deployed model ships with the app.
 
 Limits: 0.5% planned trade risk, 2% daily loss, 5% weekly loss, 1.5% total planned risk, 1% conservative global correlated risk, three positions, 3x leverage, 10% peak drawdown and five consecutive losing closures. Limits can be tightened. Gaps/outages can cause larger realized losses than planned.
 

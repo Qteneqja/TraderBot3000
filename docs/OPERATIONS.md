@@ -2,7 +2,7 @@
 
 Follow README for startup. Apply migrations, bootstrap, then start API/workers. Liveness checks process availability; readiness checks database, migration revision and initialized account. Feed health depends on quote age and worker events.
 
-The market worker streams quotes and REST-refreshes candles. Paper worker reconciles before monitoring/evaluation. Demo mode never pretends historical fixtures are current quotes. Runtime can observe explicitly deployed SHADOW models, but those models cannot approve execution. No ACTIVE promotion path currently exists.
+The market worker streams quotes and REST-refreshes candles. Paper worker reconciles before monitoring/evaluation. Demo mode never pretends historical fixtures are current quotes. Runtime can observe explicitly deployed SHADOW models, but those models cannot approve execution. Explicit account-scoped paper trials and a persistent recorder are available through the local CLI; see [PAPER_TRIALS.md](PAPER_TRIALS.md). No current model qualifies.
 
 Workers write heartbeat/failure events to the audit table. Failures log exception types, avoiding credential-bearing URLs. Retention, restart alerts, notification dispatch, broker transaction monitoring and drift alerts remain outstanding.
 
@@ -20,7 +20,7 @@ Troubleshooting:
 - Model candle manifest mismatch: restore the original dataset or start a new experiment; do not rewrite the registered hash to pass verification.
 - Paper position lacks cost metadata after upgrade: reconciliation suspends it. Preserve the order and investigate; migration never fabricates historical charges.
 
-Current schema is migration `0004`, including immutable research assessment records. Docker's migration job applies upgrades before API/workers start. The SQLite upgrade test preserves an older open order and confirms it is quarantined when its original cost assumptions are unavailable. PostgreSQL schema consistency was also checked after upgrade.
+Current schema is migration `0005`, including research reviews, paper deployment history/current slots and recorder runs/samples. Docker's migration job applies upgrades before API/workers start. The SQLite upgrade test preserves an older open order and confirms it is quarantined when its original cost assumptions are unavailable. PostgreSQL schema consistency was also checked after upgrade.
 
 Research example and shadow commands are in README. Model artifacts and JSON reports stay in named volumes and are excluded from Git. The Model lab displays stored probabilities and distinguishes replay from streaming. Reports are immutable; choose a new output filename for a new evaluation.
 

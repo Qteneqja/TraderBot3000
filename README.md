@@ -83,7 +83,7 @@ docker compose exec backend python -m app.cli assess-model VERSION
 
 The Model lab displays stored experimental shadow probabilities. Replay never submits an order. Portfolio replay verifies the original input candles and reuses the risk engine; zero qualifying trades is a valid result. Existing artifacts and reports are not overwritten. Preserve the final test partition for a predeclared evaluation rather than repeated tuning. The older `train` command is a directional diagnostic whose artifacts cannot be deployed to shadow.
 
-New candidate artifacts bind the research screening policy and risk settings before fitting. Assessment stores an immutable, deduplicated report visible in Model lab. Synthetic data, short histories, changed policies and insufficient samples fail screening. Qualifying research is checked against baseline predictions, portfolio economics, uncertainty and doubled costs. Passing research checks never activates a model; execution approval and real-time soak evidence remain separate outstanding work. See [acceptance methodology](docs/MODEL_ACCEPTANCE.md).
+New candidate artifacts bind the research screening policy and risk settings before fitting. Assessment stores an immutable, deduplicated report visible in Model lab. Synthetic data, short histories, changed policies and insufficient samples fail screening. Qualifying research is checked against baseline predictions, portfolio economics, uncertainty and doubled costs. Passing research checks never activates a model. Explicit paper-trial activation/rollback and an operational recorder are available; sustained real-time evidence remains outstanding. See [paper trial commands](docs/PAPER_TRIALS.md). See [acceptance methodology](docs/MODEL_ACCEPTANCE.md).
 
 ## Tests
 
@@ -117,7 +117,7 @@ The fault suite runs on SQLite and, when `TEST_POSTGRES_URL` is set, a dedicated
 - Conservative single-trade and single-instrument portfolio simulation, candidate-aligned labels, purged research partitions, calibration, verified artifacts and shadow replacement/retirement.
 - Practice account inspection, narrative-only LLM and Telegram outbox components.
 
-**Execution stays idle without execution-validated models.** The worker loads explicitly deployed SHADOW models for observation only. No ACTIVE promotion path exists. Demo signals are rejected; synthetic model probabilities are labeled experimental. Multi-asset research, execution-model promotion, broker reconciliation, notification orchestration and operational hardening remain incomplete.
+**Execution stays idle without an eligible, explicitly approved paper deployment.** Account-scoped activation, rollback and deactivation bind research evidence to runtime inference and risk checks. Shadow status alone cannot authorize entries. The persistent recorder distinguishes fixture diagnostics, infrastructure observations and time with paper models. No current model qualifies. Multi-asset research, sustained paper validation, broker reconciliation, notification orchestration and operational hardening remain incomplete.
 
 ## Documentation
 

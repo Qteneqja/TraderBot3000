@@ -22,6 +22,8 @@ def main():
             "/api/models",
             "/api/predictions",
             "/api/model-reviews",
+            "/api/paper-deployments",
+            "/api/paper-runs",
             "/api/risk",
             "/api/system",
         ):

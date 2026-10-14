@@ -8,7 +8,7 @@ export type Order = { id: string; symbol: string; direction: string; units: stri
   stop: string; target: string; pnl: string | null; fees_paid: string; execution: { source?: string };
   opened_at: string; close_reason: string | null };
 export type Overview = { mode: string; demo: boolean; open_positions: number; pending_orders: number;
-  planned_risk: number; signals: number; model_status: string;
+  planned_risk: number; signals: number; model_status: string; paper_deployments: number;
   account: { balance: number; equity: number; day_start: number; week_start: number; suspended: boolean;
     reconciled: boolean; updated_at: string }; server_time: string;
   quotes: { symbol: string; bid: number; ask: number; time: string; stale: boolean }[] };
