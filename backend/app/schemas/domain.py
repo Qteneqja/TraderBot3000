@@ -80,6 +80,7 @@ class Candidate(BaseModel):
     invalidation: str
     source: str
     model_version: str | None = None
+    deployment_id: str | None = None
     probability: Decimal | None = Field(default=None, ge=0, le=1)
     probability_stop: Decimal | None = Field(default=None, ge=0, le=1)
     probability_timeout: Decimal | None = Field(default=None, ge=0, le=1)

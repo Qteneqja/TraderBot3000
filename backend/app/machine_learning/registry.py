@@ -87,10 +87,24 @@ def shadow_predict(db, candidate, quote, root: Path):
     if len(records) != 1:
         raise ModelUnavailable("Multiple shadow models match this scope")
     version = records[0]
+    prediction = predict_version(version, candidate, quote, load_verified(version, root))
+    return prediction | {
+        "status": "SHADOW",
+        "execution_allowed": False,
+        "calibration_status": "EXPERIMENTAL_NOT_EXECUTION_VALIDATED",
+    }
+
+
+def predict_version(version, candidate, quote, model):
+    if (
+        not matches(version.metadata_json, candidate)
+        or quote.symbol != candidate.symbol
+        or quote.source != candidate.source
+    ):
+        raise ModelUnavailable("Prediction scope mismatch")
     cutoff = version.metadata_json.get("training_cutoff")
     if cutoff is None or pd.Timestamp(candidate.time) < pd.Timestamp(cutoff):
         raise ModelUnavailable("Prediction precedes the model's final calibration outcome")
-    model = load_verified(version, root)
     features = pd.DataFrame([prediction_features(candidate, quote)])[CANDIDATE_FEATURES]
     if not np.isfinite(features.to_numpy()).all():
         raise ModelUnavailable("Non-finite inference features")
@@ -105,13 +119,10 @@ def shadow_predict(db, candidate, quote, root: Path):
         raise ModelUnavailable("Invalid model output probabilities")
     return {
         "model_version": version.id,
-        "status": "SHADOW",
         "probability_stop": float(probabilities[0]),
         "probability_target": float(probabilities[1]),
         "probability_timeout": float(probabilities[2]),
         "event_schema": EVENT_SCHEMA,
-        "execution_allowed": False,
-        "calibration_status": "EXPERIMENTAL_NOT_EXECUTION_VALIDATED",
     }
 
 

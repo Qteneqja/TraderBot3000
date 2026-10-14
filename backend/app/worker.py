@@ -1,8 +1,10 @@
 import asyncio
 import logging
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import httpx
 from sqlalchemy import select
@@ -10,6 +12,7 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.database.session import SessionLocal
 from app.execution.paper import monitor, reconcile, submit
+from app.execution.recorder import record_sample
 from app.machine_learning.registry import record_prediction, shadow_predict
 from app.market_data.providers import CoinbaseData, OandaData
 from app.market_data.store import ingest, load_candles, save_quote
@@ -86,12 +89,14 @@ async def market_worker():
 
 async def trading_worker():
     settings = get_settings()
+    worker_id, sequence = str(uuid4()), 0
     if settings.trading_mode == "OANDA_PRACTICE":
         raise RuntimeError("Practice gateway is not enabled; complete the readiness checklist first")
     with SessionLocal() as db:
         reconcile(db, datetime.now(timezone.utc))
     while True:
         now = datetime.now(timezone.utc)
+        error_type = None
         try:
             with SessionLocal() as db:
                 monitor(db, settings, now)
@@ -124,13 +129,28 @@ async def trading_worker():
                 {
                     "mode": settings.trading_mode,
                     "demo": settings.demo_mode,
-                    "model": "NO_EXECUTION_VALIDATED_MODEL",
+                    "model": "ACCOUNT_SCOPED_PAPER_DEPLOYMENT_GATE",
                 },
             )
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            record("trading_worker_error", {"error_type": type(exc).__name__})
+            error_type = type(exc).__name__
+            record("trading_worker_error", {"error_type": error_type})
+        try:
+            with SessionLocal() as db:
+                record_sample(
+                    db,
+                    settings,
+                    datetime.now(timezone.utc),
+                    worker_id,
+                    sequence,
+                    time.monotonic_ns(),
+                    error_type,
+                )
+        except Exception as exc:
+            record("paper_recorder_error", {"error_type": type(exc).__name__})
+        sequence += 1
         await asyncio.sleep(10)
 
 

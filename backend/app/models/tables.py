@@ -149,6 +149,53 @@ class Event(Base):
     detail: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class PaperDeployment(Base):
+    __tablename__ = "paper_deployments"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    account_id: Mapped[str] = mapped_column(ForeignKey("account_snapshots.id"))
+    scope_key: Mapped[str] = mapped_column(String(64))
+    model_id: Mapped[str] = mapped_column(ForeignKey("model_versions.id"))
+    review_id: Mapped[str] = mapped_column(ForeignKey("model_reviews.id"))
+    previous_id: Mapped[str | None] = mapped_column(ForeignKey("paper_deployments.id"))
+    rollback_of: Mapped[str | None] = mapped_column(ForeignKey("paper_deployments.id"))
+    operator: Mapped[str] = mapped_column(String(120))
+    reason: Mapped[str] = mapped_column(String(512))
+    contract: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PaperDeploymentSlot(Base):
+    __tablename__ = "paper_deployment_slots"
+    account_id: Mapped[str] = mapped_column(ForeignKey("account_snapshots.id"), primary_key=True)
+    scope_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    deployment_id: Mapped[str | None] = mapped_column(ForeignKey("paper_deployments.id"))
+
+
+class PaperRun(Base):
+    __tablename__ = "paper_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    account_id: Mapped[str] = mapped_column(ForeignKey("account_snapshots.id"))
+    status: Mapped[str] = mapped_column(String(24), default="RUNNING")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    contract: Mapped[dict] = mapped_column(JSON)
+
+
+class PaperSample(Base):
+    __tablename__ = "paper_samples"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("paper_runs.id"), index=True)
+    time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    worker_id: Mapped[str] = mapped_column(String(36))
+    sequence: Mapped[int] = mapped_column(Integer)
+    monotonic_ns: Mapped[Decimal] = mapped_column(Numeric(24, 0))
+    healthy: Mapped[bool] = mapped_column(Boolean)
+    observed_seconds: Mapped[Decimal] = mapped_column(Numeric(24, 6))
+    model_observed_seconds: Mapped[Decimal] = mapped_column(Numeric(24, 6))
+    continuity_break: Mapped[bool] = mapped_column(Boolean)
+    detail: Mapped[dict] = mapped_column(JSON)
+
+
 class ModelPrediction(Base):
     __tablename__ = "model_predictions"
     __table_args__ = (UniqueConstraint("model_id", "candidate_id", name="uq_prediction_candidate_model"),)

@@ -27,5 +27,9 @@ def test_dashboard_and_auth(tmp_path):
             assert client.post("/api/admin/suspend").status_code == 503
             assert client.post("/api/live/activate").status_code == 404
             assert len(client.get("/api/strategies").json()) == 6
+            assert client.get("/api/paper-deployments").json() == []
+            assert client.get("/api/paper-runs").json() == []
+            assert client.get("/api/paper-runs/missing/samples").status_code == 404
+            assert client.post("/api/paper-deployments").status_code == 405
     finally:
         app.dependency_overrides.clear()

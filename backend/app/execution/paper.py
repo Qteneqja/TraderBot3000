@@ -7,11 +7,11 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.machine_learning.deployment import authorize_candidate
 from app.models.tables import (
     Account,
     Event,
     Instrument,
-    ModelVersion,
     OrderEvent,
     OrderRow,
     QuoteRow,
@@ -170,16 +170,7 @@ def submit(db: Session, candidate: Candidate, quote: Quote, settings: Settings, 
         fee_rate=settings.paper_fee_rate,
         extra_cost_per_unit=settings.paper_financing_per_unit_per_bar * 12,
     )
-    version = db.get(ModelVersion, candidate.model_version) if candidate.model_version else None
-    evidence = version.metadata_json if version else {}
-    scope_ok = (
-        evidence.get("symbol") == candidate.symbol
-        and evidence.get("strategy") == candidate.strategy
-        and evidence.get("timeframe") == candidate.timeframe
-        and evidence.get("source") == candidate.source
-    )
-    if not version or version.status != "ACTIVE" or not evidence.get("execution_validated") or not scope_ok:
-        candidate = candidate.model_copy(update={"calibrated": False})
+    candidate = authorize_candidate(db, candidate, quote, settings, now)
     decision = approve(candidate, quote, state, rules, settings, now)
     db.add(
         SignalRow(
@@ -215,6 +206,7 @@ def submit(db: Session, candidate: Candidate, quote: Quote, settings: Settings, 
         expires_at=now + timedelta(seconds=candidate.timeframe * 12),
         execution={
             "schema": "paper-cost-v1",
+            "deployment_id": candidate.deployment_id,
             "source": candidate.source,
             "quote_time": quote.time.isoformat(),
             "fee_rate": str(settings.paper_fee_rate),

@@ -72,6 +72,18 @@ def main():
     p = commands.add_parser("init")
     p.add_argument("--demo", action="store_true")
     p.add_argument("--demo-count", type=int, default=360)
+    for name in ("activate-paper", "rollback-paper", "deactivate-paper"):
+        p = commands.add_parser(name)
+        p.add_argument("identifier", help="Model version for activation; deployment ID otherwise")
+        if name == "activate-paper":
+            p.add_argument("--review", required=True)
+        p.add_argument("--operator", required=True)
+        p.add_argument("--reason", required=True)
+    p = commands.add_parser("paper-record-start")
+    p.add_argument("--symbols", nargs="+", required=True)
+    for name in ("paper-record-stop", "paper-record-report"):
+        p = commands.add_parser(name)
+        p.add_argument("run_id")
     commands.add_parser("acceptance-policy")
     p = commands.add_parser("assess-model")
     p.add_argument("version")
@@ -116,7 +128,51 @@ def main():
             p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
     commands.add_parser("backtest-demo")
     args = parser.parse_args()
-    if args.command == "acceptance-policy":
+    if args.command in ("activate-paper", "rollback-paper", "deactivate-paper"):
+        from app.machine_learning.deployment import activate, deactivate, rollback
+
+        settings, now = get_settings(), datetime.now(timezone.utc)
+        with SessionLocal() as db:
+            if args.command == "activate-paper":
+                result = activate(
+                    db,
+                    args.identifier,
+                    args.review,
+                    Path(settings.model_artifact_dir),
+                    settings,
+                    args.operator,
+                    args.reason,
+                    now,
+                )
+            elif args.command == "rollback-paper":
+                result = rollback(
+                    db,
+                    args.identifier,
+                    Path(settings.model_artifact_dir),
+                    settings,
+                    args.operator,
+                    args.reason,
+                    now,
+                )
+            else:
+                deactivate(db, args.identifier, args.operator, args.reason)
+                result = args.identifier
+            print(
+                json.dumps({"deployment": result, "action": args.command, "broker_execution_allowed": False})
+            )
+    elif args.command.startswith("paper-record-"):
+        from app.execution.recorder import run_report, start_run, stop_run
+
+        with SessionLocal() as db:
+            now = datetime.now(timezone.utc)
+            if args.command == "paper-record-start":
+                print(json.dumps({"run_id": start_run(db, get_settings(), args.symbols, now)}))
+            elif args.command == "paper-record-stop":
+                stop_run(db, args.run_id, now)
+                print(json.dumps({"run_id": args.run_id, "status": "STOPPED"}))
+            else:
+                print(json.dumps(run_report(db, args.run_id, now), indent=2))
+    elif args.command == "acceptance-policy":
         from app.machine_learning.policy import acceptance_policy
 
         print(json.dumps(acceptance_policy(get_settings()), indent=2))

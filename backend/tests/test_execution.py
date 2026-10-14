@@ -1,6 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal as D
 
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from test_risk import setup_risk
@@ -10,6 +11,8 @@ from app.database.session import Base, make_engine
 from app.execution.paper import monitor, reconcile, submit
 from app.market_data.store import save_quote
 from app.models.tables import Account, ModelVersion, OrderRow
+
+pytestmark = pytest.mark.usefixtures("execution_model_stub")
 
 
 def seed_test_model(db, candidate):

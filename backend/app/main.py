@@ -20,6 +20,10 @@ from app.models.tables import (
     ModelReview,
     ModelVersion,
     OrderRow,
+    PaperDeployment,
+    PaperDeploymentSlot,
+    PaperRun,
+    PaperSample,
     QuoteRow,
     SignalRow,
 )
@@ -76,7 +80,7 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0004" or db.get(Account, "PAPER") is None:
+        if revision != "0005" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
@@ -92,6 +96,11 @@ def overview(db: Session = Depends(get_db)):
     quotes = db.scalars(select(QuoteRow)).all()
     now = datetime.now(timezone.utc)
     positions = db.scalars(select(OrderRow).where(OrderRow.state == "FILLED")).all()
+    deployment_count = db.scalar(
+        select(func.count())
+        .select_from(PaperDeploymentSlot)
+        .where(PaperDeploymentSlot.account_id == "PAPER", PaperDeploymentSlot.deployment_id.is_not(None))
+    )
     return {
         "name": settings.app_name,
         "mode": settings.trading_mode,
@@ -105,7 +114,8 @@ def overview(db: Session = Depends(get_db)):
         "planned_risk": sum(float(p.planned_risk) for p in positions),
         "quotes": [serialize(q) | {"stale": (now - aware(q.time)).total_seconds() > 30} for q in quotes],
         "live_execution": "UNSUPPORTED",
-        "model_status": "NO_EXECUTION_VALIDATED_MODEL",
+        "model_status": "PAPER_TRIAL_CONFIGURED" if deployment_count else "NO_EXECUTION_VALIDATED_MODEL",
+        "paper_deployments": deployment_count,
         "news_status": "UNAVAILABLE",
         "server_time": now.isoformat(),
     }
@@ -218,6 +228,42 @@ def system(db: Session = Depends(get_db)):
         "economic_calendar": "UNAVAILABLE",
         "events": [serialize(e) for e in events],
     }
+
+
+@app.get("/api/paper-deployments")
+def paper_deployments(db: Session = Depends(get_db)):
+    active = set(db.scalars(select(PaperDeploymentSlot.deployment_id)).all())
+    return [
+        serialize(row) | {"current": row.id in active}
+        for row in db.scalars(
+            select(PaperDeployment).order_by(PaperDeployment.created_at.desc()).limit(100)
+        ).all()
+    ]
+
+
+@app.get("/api/paper-runs")
+def paper_runs(db: Session = Depends(get_db)):
+    from app.execution.recorder import run_report
+
+    return [
+        run_report(db, row.id, datetime.now(timezone.utc))
+        for row in db.scalars(select(PaperRun).order_by(PaperRun.started_at.desc()).limit(20)).all()
+    ]
+
+
+@app.get("/api/paper-runs/{run_id}/samples")
+def paper_samples(run_id: str, db: Session = Depends(get_db)):
+    if db.get(PaperRun, run_id) is None:
+        raise HTTPException(404, "Unknown paper run")
+    return [
+        serialize(row)
+        for row in db.scalars(
+            select(PaperSample)
+            .where(PaperSample.run_id == run_id)
+            .order_by(PaperSample.time.desc())
+            .limit(100)
+        ).all()
+    ]
 
 
 @app.post("/api/admin/suspend", dependencies=[Depends(admin)])

@@ -19,6 +19,8 @@ from app.execution.paper import money, monitor, reconcile, submit
 from app.market_data.store import save_quote
 from app.models.tables import Account, OrderEvent, OrderRow, SignalRow
 
+pytestmark = pytest.mark.usefixtures("execution_model_stub")
+
 
 @pytest.fixture(params=["sqlite", "postgresql"])
 def store(request, tmp_path):
