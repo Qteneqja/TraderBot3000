@@ -1,5 +1,11 @@
 # AegisTrade AI implementation progress
 
+## Full-year provider history backfill (October 14, 2026 UTC)
+
+Completed the operator-requested five-minute backfill for 2025-10-14 00:00 through 2026-10-14 00:00 UTC: EUR_USD/oanda 74,589 candles, GBP_USD/oanda 74,577, BTC-USD/coinbase 104,971 and ETH-USD/coinbase 104,971 (359,108 total within the requested interval). All four durable ingestion jobs are COMPLETE. Audit found zero invalid OHLC/volume/completeness/alignment rows and bid/ask components on every Forex row. Targeted provider requests did not recover the short gaps; each crypto series has 149 absent intervals. Forex calendar/closure classification remains unverified. No candles were invented. The full coverage/gap/hash report is saved in the research volume and ignored local data/reports folder; docs/HISTORICAL_DATA.md records scope, counts and job IDs. The dashboard's 300-candle window does not limit training's separate database query. Existing older provider samples remain preserved outside the audited interval.
+
+Verification: 117 backend tests passed including PostgreSQL cases, 9 frontend tests passed, production build passed, Alembic schema check and stack smoke checks passed. Application code/settings were unchanged. No model trained or activated; zero orders. Next: review provider execution-quality and cost assumptions, explicitly define the dataset for chronological training, and assess real-market models under the existing policy. Sufficient duration is not research approval or broker readiness.
+
 ## TradingView diagnostic (October 14, 2026 UTC)
 
 Tested the user-requested rongardF/tvdatafeed library at commit e6f6aaa7de439ac6e454d9b26d2760ded8dc4923 in an ignored isolated Python environment. Anonymous downloads returned 1,000 hourly NSE:NIFTY bars, 5,000 five-minute OANDA:EURUSD bars and 5,000 five-minute COINBASE:BTCUSD bars. The latter two span only 23.36 and 17.36 calendar days, below the 180-day research minimum. Added a bounded metadata-only diagnostic script and docs/TRADINGVIEW_DATA.md. Optional login reads local ignored credentials; authenticated access remains externally unverified. No application data, production dependencies, deployments or orders were changed. Returned timestamps are host-local naive values and the data has not been validated or imported for training.
