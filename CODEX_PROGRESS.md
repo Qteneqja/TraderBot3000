@@ -1,5 +1,11 @@
 # AegisTrade AI implementation progress
 
+## TradingView diagnostic (October 14, 2026 UTC)
+
+Tested the user-requested rongardF/tvdatafeed library at commit e6f6aaa7de439ac6e454d9b26d2760ded8dc4923 in an ignored isolated Python environment. Anonymous downloads returned 1,000 hourly NSE:NIFTY bars, 5,000 five-minute OANDA:EURUSD bars and 5,000 five-minute COINBASE:BTCUSD bars. The latter two span only 23.36 and 17.36 calendar days, below the 180-day research minimum. Added a bounded metadata-only diagnostic script and docs/TRADINGVIEW_DATA.md. Optional login reads local ignored credentials; authenticated access remains externally unverified. No application data, production dependencies, deployments or orders were changed. Returned timestamps are host-local naive values and the data has not been validated or imported for training.
+
+Verification: the final anonymous probe retrieved all three requested datasets; 117 backend tests passed including PostgreSQL cases, 9 frontend tests passed, TypeScript/Vite build passed, Alembic schema check reported no new operations, and probe Ruff/compilation checks passed. Frontend bundling first encountered sandbox ancestor-directory access denial, then passed with approved execution outside that sandbox. Existing backend warnings remain unchanged. Authenticated retrieval and future TradingView ingestion remain unverified/unsupported respectively.
+
 This repository started with only Prompt.md and a title-only README. No existing application was replaced.
 
 ## Implementation sequence and dependencies
