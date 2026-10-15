@@ -1,5 +1,7 @@
 # Remaining autonomous milestones: October 14, 2026 UTC
 
+October 15 continuation: schema 0008 prospective reservation/finalization is implemented and tested; all sixteen four-asset/four-family jobs completed with zero qualifying validation trades under base and doubled costs. No final period can be reserved yet. See [actual results and failed gates](RESEARCH_RESULTS.md) and [the one-shot workflow](CONTROLLED_LEARNING.md). Current verification: 211 backend tests, 17 frontend tests, production build, Ruff, PostgreSQL schema check and HTTP smoke passed. No model/order was activated. Older measured checkpoints below remain historical evidence.
+
 ## Verified research milestone
 
 The CLI now accepts explicit inclusive `--start` and exclusive `--end` for
@@ -114,7 +116,8 @@ Trial/gateway positive authority is explicitly mocked in
 tests. Real elapsed model-performance evidence is absent. Outcome attribution,
 two-window drift diagnostics, explicit suspension policy and a separate weekly
 research worker are implemented. Scheduled candidates cannot promote; prospective
-untouched final evaluation remains to be automated. Further model research and
+untouched final evaluation now has a one-shot reservation/finalization workflow
+(schema 0008), but no current candidate passes its validation prerequisite. Further model research and
 independent feature/strategy/cost/regime validation remain necessary.
 
 Local `.env` had been changed to live enabled and ten positions; restored to live
