@@ -31,6 +31,7 @@ def status(db, settings):
     if configured and settings.enable_notifications and latest is not None:
         state = latest.status
     return {'status': state, 'automatic_delivery_enabled': settings.enable_notifications,
+            'monitoring_enabled': settings.enable_telegram_monitoring,
             'counts': counts, 'latest_attempt': None if latest is None else {
                 'state': latest.status, 'attempts': latest.attempts, 'error_code': latest.error_code,
                 'claimed_at': aware(latest.claimed_at).isoformat() if latest.claimed_at else None,

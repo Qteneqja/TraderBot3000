@@ -224,6 +224,13 @@ class Notification(Base):
     error_code: Mapped[str | None] = mapped_column(String(48))
 
 
+class TelegramCursor(Base):
+    __tablename__ = 'telegram_monitor_cursors'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    next_update: Mapped[int] = mapped_column(Integer, default=0)
+    initialized: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class PracticeAccount(Base):
     __tablename__ = "practice_accounts"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

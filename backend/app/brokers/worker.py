@@ -66,6 +66,9 @@ async def practice_worker():
                                     await send_once(db, adapter, settings, order_id)
                 if settings.enable_notifications:
                     with SessionLocal() as db:
+                        from app.notifications.monitor import poll
+
+                        await poll(db, settings, client)
                         await deliver(db, settings, client)
                 record("trading_worker_heartbeat", {"mode": "OANDA_PRACTICE", "worker_id": worker_id,
                        "gateway": "APPROVED" if authority else "AWAITING_OPERATOR_APPROVAL",

@@ -178,6 +178,9 @@ async def trading_worker():
 
                 async with httpx.AsyncClient(timeout=15) as client:
                     with SessionLocal() as db:
+                        from app.notifications.monitor import poll
+
+                        await poll(db, settings, client)
                         await deliver(db, settings, client)
             except Exception as exc:
                 record("notification_worker_error", {"error_type": type(exc).__name__})

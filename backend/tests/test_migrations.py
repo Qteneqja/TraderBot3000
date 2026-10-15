@@ -49,9 +49,10 @@ def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path,
         assert interrupted.status == 'UNKNOWN' and interrupted.error_code == 'INTERRUPTED_DELIVERY'
         assert interrupted.claimed_at is None and interrupted.delivered_at is None
         assert db.get(Notification, 'legacy-delivered').delivered_at is None
-        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0010"
+        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0011"
     assert "model_predictions" in inspect(engine).get_table_names()
     assert "model_reviews" in inspect(engine).get_table_names()
+    assert "telegram_monitor_cursors" in inspect(engine).get_table_names()
     assert {"paper_deployments", "paper_deployment_slots", "paper_runs", "paper_samples"} <= set(
         inspect(engine).get_table_names()
     )

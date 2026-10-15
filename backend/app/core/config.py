@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     telegram_bot_token: SecretStr = SecretStr("")
     telegram_chat_id: str = ""
     enable_notifications: bool = False
+    enable_telegram_monitoring: bool = False
     enable_drift_suspension: bool = False
     risk_per_trade: Decimal = Field(default=Decimal("0.005"), gt=0, le=Decimal("0.005"))
     max_daily_loss: Decimal = Field(default=Decimal("0.02"), gt=0, le=Decimal("0.02"))
