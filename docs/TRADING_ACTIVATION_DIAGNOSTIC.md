@@ -24,7 +24,7 @@ Assessment: October 15, 2026 UTC. This report distinguishes software tests, curr
 
 The previous precision fix is retained. This session adds complete recorded PAPER fill/closure facts and richer practice messages, strict Telegram delivery receipts, safe error codes, rate-limit deadlines, interrupted-send quarantine, claim fencing and a single-message connectivity command. Migration 0010 preserves legacy evidence without inventing delivery timestamps. Read-only activation diagnostics, worker evaluation counters and dashboard visibility make zero-order behavior inspectable.
 
-The final source also separates provider rejection samples from legacy fixture totals and records delivery time after the API response. The last rebuild request was declined; these final refinements are tested/committed but not installed in the running containers. Earlier receipt/diagnostic functionality is deployed. No rebuild was retried to circumvent that decision.
+The final source also separates provider rejection samples from legacy fixture totals and records delivery time after the API response. An earlier rebuild was declined, then the user explicitly approved cf51339. The approved application source was deployed and verified at 18:13 UTC on October 15: all seven services healthy, schema/HTTP smoke passed, provider-separated diagnostic and learning-worker native-crash tracing installed. No model or order was activated. No rebuild occurred between the decline and the subsequent explicit approval.
 
 ## Inspect current evidence
 

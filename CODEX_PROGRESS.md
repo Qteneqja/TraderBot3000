@@ -1,5 +1,13 @@
 # AegisTrade AI implementation progress
 
+## Approved final application deployment verified (October 15, 2026 UTC)
+
+User explicitly approved deployment of cf51339, superseding the earlier declined rebuild and pending approval below. Verified the current workspace differs from that approved revision only in CODEX_PROGRESS.md and docs/TRADING_ACTIVATION_REPORT.md; application source is unchanged. No queued/running research job existed before deployment. Rebuilt/recreated backend, frontend, trading-worker and learning-worker through Compose; market/LLM/database services were not restarted. Credentials, research artifacts/results and trading gates were preserved.
+
+At 18:13 UTC all seven services were healthy and all four worker heartbeats fresh. PostgreSQL Alembic check reported no new operations; HTTP/dashboard proxy smoke passed. Verified provider_rejection_reasons/provider_sample_count in the running diagnostic and imported native-crash tracing from the running learning worker. This installs the previously pending refinements; it does not fix the past BTC native crash or retry its failed batch. Recorded application_deployment_verified audit evidence.
+
+Post-deployment status: PAPER, live=false, zero active PAPER model deployments, zero paper/practice orders; one previously confirmed Telegram connectivity receipt, no new test message. No model or broker authorization was issued. Prior 262-test backend/21-test frontend/build verification and successful cf51339 GitHub CI remain applicable because application source did not change. This deployment turn ran schema and runtime smoke checks; it did not rerun the complete test suites. No new model qualifies and all prospective/trial/broker acceptance requirements remain. Historical pending-deployment notes below are superseded by this checkpoint.
+
 ## Completed corrected-strategy campaign and external Telegram test (October 15, 2026 UTC)
 
 Delivery verification: source/reports commits 7461adf, 338d743 and cf51339 are pushed. GitHub run 38781047692 passed backend/frontend/migrations/proxy recovery for cf51339, including the new fatal-child regression. Working tree was clean at verification. The concrete final deployment approval question remains pending after the earlier rebuild was declined; no elapsed wait is treated as authorization.

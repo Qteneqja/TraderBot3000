@@ -1,6 +1,6 @@
 # Trading activation report
 
-October 15, 2026 UTC. Final research snapshot: 17:45:44 UTC; final read-only operating snapshot: 17:49 UTC. **No model qualifies and autonomous entry execution remains inactive.** Real-money execution remains unsupported/disabled. This session completed a new bounded comparison and repaired notification/diagnostic infrastructure; it did not establish a trading edge.
+October 15, 2026 UTC. Final research snapshot: 17:45:44 UTC; initial read-only operating snapshot: 17:49 UTC; approved application deployment verified at 18:13 UTC. **No model qualifies and autonomous entry execution remains inactive.** Real-money execution remains unsupported/disabled. This work completed a new bounded comparison and repaired notification/diagnostic infrastructure; it did not establish a trading edge.
 
 ## Milestones
 
@@ -98,17 +98,17 @@ All seven Compose services were healthy during verification. Four worker heartbe
 
 Verification: **262 backend tests passed**, PostgreSQL enabled, no skips; **21 frontend tests** and production build passed. Ruff/diff checks passed; SQLite legacy-order/notification preservation and PostgreSQL upgrade/schema check passed. HTTP/proxy smoke passed. The two existing Starlette HTTPX/sparse-class warnings remain. [Implementation CI 38778978068](https://github.com/Qteneqja/TraderBot3000/actions/runs/38778978068) passed for `7461adf`. [Final revision CI 38781047692](https://github.com/Qteneqja/TraderBot3000/actions/runs/38781047692) also passed both jobs for `cf51339`, including the crash-trace test, PostgreSQL migrations and frontend proxy recovery. Browser visual verification was not performed.
 
-The final rebuild request was declined. The committed provider/fixture display separation, post-response delivery timestamp refinement and new crash tracing are **tested but not deployed**. Earlier receipt/diagnostic/lifecycle functionality and verified Telegram configuration are running. No rebuild was retried after the decline; no active research job was interrupted for the later changes.
+An earlier rebuild request was declined; the user subsequently explicitly approved deployment of cf51339. The current workspace differed only in two documentation files. Rebuilt backend, frontend, trading-worker and learning-worker with that unchanged application source. At 18:13 UTC all seven services were healthy, all four worker heartbeats fresh, schema consistency/HTTP proxy smoke passed, provider-separated diagnostic fields present and native-crash tracing installed in the learning worker. No queued/running research job was interrupted. Recorded deployment audit evidence; PAPER/live=false/zero active model deployments/zero paper or practice orders and the single earlier Telegram receipt were preserved. The complete suites were not rerun for this source-unchanged deployment; prior 262/21-test verification and successful cf51339 CI remain applicable. No rebuild occurred before the subsequent explicit approval.
 
 ## J. Remaining work and operating commands
 
-1. Diagnose the native BTC failure using preserved evidence and a separately declared instrumented attempt; do not reset or blindly replay its failed run. Crash tracing is now implemented for future CLI children, but not deployed to the existing learning worker.
+1. Diagnose the native BTC failure using preserved evidence and a separately declared instrumented attempt; do not reset or blindly replay its failed run. Crash tracing is installed for future CLI children; it does not retrospectively diagnose or repair the past failure.
 2. Research a defensible candidate that meets unchanged sample, calibration, activity, economic, risk and cost-stress requirements. The current completed candidates fail; activation cannot manufacture evidence.
 3. After passing selection and independent cost/regime/portfolio review, freeze/reserve a new prospective test and collect at least 45 future days plus the outcome horizon. Evaluate once without refitting.
 4. Explicitly activate a fully qualifying PAPER model, approve/start its formal trial and observe the required elapsed time and outcomes. Only genuine qualified opportunities may create orders.
 5. Complete separately approved OANDA practice fill/protection/close/restart/notification acceptance before autonomous practice authorization.
 6. Complete unsupported pending-order/partial-exit workflows and the requested broader operational-alert/daily-summary catalog under separately validated execution semantics. Current implementation must not be labeled complete for those features.
-7. Deploy the committed final refinements when a rebuild is authorized, then verify the new running version. The prior deployment attempt was declined.
+The previously pending application deployment is complete after explicit approval and runtime verification; it is no longer a remaining blocker. Model qualification and external lifecycle requirements above still apply.
 
 Safe read-only operation now:
 
@@ -120,7 +120,7 @@ docker compose exec backend python -m app.cli practice-reconcile
 .venv/Scripts/python.exe scripts/verify_stack.py
 ```
 
-For a separately authorized restart/deployment (do not use this to bypass the declined rebuild), existing Compose definitions preserve data and credentials:
+For future authorized restarts/deployments, existing Compose definitions preserve data and credentials. Check that no active research job will be interrupted:
 
 ```powershell
 docker compose up --build -d
