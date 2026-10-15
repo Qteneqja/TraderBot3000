@@ -28,6 +28,9 @@ def test_dashboard_and_auth(tmp_path):
             assert client.get("/api/practice-status").json() == []
             assert client.get('/api/final-evaluations').json() == []
             assert client.post('/api/final-evaluations').status_code == 405
+            assert client.get('/api/narratives').json()['status'] == 'DISABLED'
+            assert client.get('/api/narratives').json()['records'] == []
+            assert client.post('/api/narratives').status_code == 405
             learning = client.get("/api/learning").json()
             assert learning['runs'] == learning['schedules'] == learning['outcomes'] == []
             assert learning['promotion'] == 'EXPLICIT_OPERATOR_APPROVAL_ONLY'

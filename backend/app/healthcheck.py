@@ -18,9 +18,10 @@ def check(kind, max_age):
 
 if __name__ == "__main__":
     learning = len(sys.argv) > 1 and sys.argv[1] == "learning"
+    llm = len(sys.argv) > 1 and sys.argv[1] == 'llm'
     market = len(sys.argv) > 1 and sys.argv[1] == "market"
     healthy = check(
-        "learning_worker_heartbeat" if learning else "market_worker_heartbeat" if market else "trading_worker_heartbeat",
-        90 if learning else 180 if market else 45
+        'llm_worker_heartbeat' if llm else "learning_worker_heartbeat" if learning else "market_worker_heartbeat" if market else "trading_worker_heartbeat",
+        90 if learning or llm else 180 if market else 45
     )
     sys.exit(0 if healthy else 1)

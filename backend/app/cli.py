@@ -129,6 +129,7 @@ def main():
         p = commands.add_parser(name)
         p.add_argument("run_id")
     commands.add_parser("acceptance-policy")
+    commands.add_parser('llm-tick')
     p = commands.add_parser('reserve-final-test')
     p.add_argument('version')
     p.add_argument('--start', required=True)
@@ -195,7 +196,18 @@ def main():
             p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
     commands.add_parser("backtest-demo")
     args = parser.parse_args()
-    if args.command in ('reserve-final-test', 'evaluate-final-test', 'abandon-final-test'):
+    if args.command == 'llm-tick':
+        from app.llm.pipeline import enqueue_events, process_one
+
+        async def tick():
+            with SessionLocal() as db:
+                queued = enqueue_events(db, get_settings())
+                async with httpx.AsyncClient(follow_redirects=False) as client:
+                    result = await process_one(db, get_settings(), client)
+                return {'queued': len(queued), 'result': result, 'execution_authority': False}
+
+        print(json.dumps(asyncio.run(tick()), indent=2))
+    elif args.command in ('reserve-final-test', 'evaluate-final-test', 'abandon-final-test'):
         from app.machine_learning.prospective import abandon_period, evaluate_period, reserve_period
 
         settings = get_settings()

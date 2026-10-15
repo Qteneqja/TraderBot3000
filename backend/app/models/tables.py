@@ -314,3 +314,18 @@ class FinalEvaluation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     plan: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class NarrativeRecord(Base):
+    __tablename__ = "narrative_records"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_kind: Mapped[str] = mapped_column(String(32))
+    source_id: Mapped[str] = mapped_column(String(64))
+    provider: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    attempted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    state: Mapped[str] = mapped_column(String(24), default='PENDING', index=True)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    result: Mapped[dict] = mapped_column(JSON, default=dict)

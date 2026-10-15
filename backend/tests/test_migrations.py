@@ -43,7 +43,7 @@ def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path,
         assert legacy.state == "FILLED" and legacy.units == 1
         assert legacy.execution == {} and legacy.fees_paid == 0 and legacy.financing_bars == 0
         assert not valid_execution(legacy)
-        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0008"
+        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0009"
     assert "model_predictions" in inspect(engine).get_table_names()
     assert "model_reviews" in inspect(engine).get_table_names()
     assert {"paper_deployments", "paper_deployment_slots", "paper_runs", "paper_samples"} <= set(

@@ -73,6 +73,7 @@ def test_learning_summary_projects_candidate_fields_without_loading_curves(store
         db.commit()
         db.expunge_all()
         report = learning_status(db)
+        assert report['schedules'][0]['strategy'] == 'trend'
         assert report['runs'][0]['candidates'][0]['validation']['multiclass_brier'] == .6
         assert 'portfolio' not in report['runs'][0]['candidates'][0]
         assert not any(isinstance(obj, LearningRun) for obj in db.identity_map.values())

@@ -23,6 +23,7 @@ from app.models.tables import (
     ModelPrediction,
     ModelReview,
     ModelVersion,
+    NarrativeRecord,
     OrderRow,
     PaperDeployment,
     PaperDeploymentSlot,
@@ -87,7 +88,7 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0008" or db.get(Account, "PAPER") is None:
+        if revision != "0009" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
@@ -144,6 +145,7 @@ def learning_status(db: Session = Depends(get_db)):
     runs = db.execute(select(*fields).order_by(LearningRun.scheduled_for.desc()).limit(20)).mappings().all()
     return {
         "schedules": [{"id": s.id, "enabled": s.enabled, "symbol": s.plan["symbol"], "source": s.plan["source"],
+                       "strategy": s.plan['strategy'],
                        "families": s.plan["families"], "interval_days": s.plan["interval_days"],
                        "next_due": aware(s.next_due).isoformat(), "validation_only": True} for s in schedules],
         "runs": [{"id": r['id'], "state": r['state'], "scheduled_for": aware(r['scheduled_for']).isoformat(),
@@ -162,6 +164,22 @@ def final_evaluations(db: Session = Depends(get_db)):
              'start': row.plan['start'], 'end': row.plan['end'], 'result': row.result,
              'execution_authority': False} for row in db.scalars(select(FinalEvaluation)
                 .order_by(FinalEvaluation.created_at.desc()).limit(50))]
+
+
+@app.get('/api/narratives')
+def narratives(db: Session = Depends(get_db)):
+    from app.llm.pipeline import status
+
+    settings = get_settings()
+    rows = db.scalars(select(NarrativeRecord).order_by(NarrativeRecord.created_at.desc()).limit(20)).all()
+    return {'status': status(db, settings), 'enabled': settings.enable_llm_narratives,
+            'provider': settings.llm_provider, 'model': settings.llm_model,
+            'max_calls_per_day': settings.llm_max_calls_per_day,
+            'records': [{'id': row.id, 'source_kind': row.source_kind, 'provider': row.provider, 'model': row.model,
+                         'created_at': aware(row.created_at).isoformat(), 'state': row.state,
+                         'facts': row.snapshot, 'explanation': row.result.get('explanation'),
+                         'error_type': row.result.get('error_type'), 'execution_authority': False,
+                         'training_input': False} for row in rows]}
 
 
 @app.get("/api/practice-status")
@@ -283,6 +301,8 @@ def risk():
 
 @app.get("/api/system")
 def system(db: Session = Depends(get_db)):
+    from app.llm.pipeline import status as llm_status
+
     s = get_settings()
     events = db.scalars(select(Event).order_by(Event.id.desc()).limit(50)).all()
     now = datetime.now(timezone.utc)
@@ -311,13 +331,7 @@ def system(db: Session = Depends(get_db)):
         "database": "CONNECTED",
         "oanda": feed_status("oanda"),
         "coinbase": feed_status("coinbase"),
-        "llm": "CONFIGURED_NOT_VERIFIED"
-        if (
-            s.deepseek_api_key.get_secret_value()
-            if s.llm_provider == "deepseek"
-            else s.openai_api_key.get_secret_value()
-        )
-        else "NOT_CONFIGURED",
+        "llm": llm_status(db, s),
         "telegram": "CONFIGURED_NOT_VERIFIED"
         if s.telegram_bot_token.get_secret_value()
         else "NOT_CONFIGURED",

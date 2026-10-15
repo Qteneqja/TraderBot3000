@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     llm_provider: Literal["deepseek", "openai"] = "deepseek"
     llm_model: str = "deepseek-flash"
     deepseek_api_key: SecretStr = SecretStr("")
+    enable_llm_narratives: bool = False
+    llm_max_calls_per_day: int = Field(default=4, ge=1, le=24)
+    llm_min_interval_seconds: int = Field(default=60, ge=1, le=86400)
     openai_api_key: SecretStr = SecretStr("")
     telegram_bot_token: SecretStr = SecretStr("")
     telegram_chat_id: str = ""
