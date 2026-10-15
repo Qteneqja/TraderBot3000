@@ -41,7 +41,9 @@ def campaign_report(db, campaign, now, settings):
                 item['deployment_eligible'] = False
             candidates.append(item)
         batches.append({'run': run.id, 'symbol': schedule.plan['symbol'], 'strategy': schedule.plan['strategy'],
-                        'state': run.state, 'plan': schedule.plan, 'candidates': candidates})
+                        'state': run.state, 'plan': schedule.plan, 'candidates': candidates,
+                        'failure': {key: run.result[key] for key in ('failure', 'exit_code', 'error_type', 'reason')
+                                    if key in run.result}})
     return {'schema': 'activation-research-report-v1', 'campaign': campaign, 'as_of': now.isoformat(),
             'predeclared_at': declaration.time.isoformat(), 'policy': policy,
             'current_code_sha256': code['sha256'], 'declared_code_sha256': declaration.detail['code_sha256'],

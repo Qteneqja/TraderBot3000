@@ -274,7 +274,10 @@ def main():
             elif args.command == "learning-tick":
                 result = queue_due(db, now)
             elif args.command == "learning-run":
-                result = run_research(db, args.run_id, args.worker, get_settings(), now)
+                from app.machine_learning.diagnostics import research_crash_trace
+
+                with research_crash_trace(args.run_id):
+                    result = run_research(db, args.run_id, args.worker, get_settings(), now)
             else:
                 if not args.operator.strip() or not args.reason.strip():
                     raise ValueError("Operator attribution required")
