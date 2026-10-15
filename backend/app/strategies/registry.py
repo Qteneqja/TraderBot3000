@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from decimal import ROUND_HALF_EVEN, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_EVEN, Decimal
 from hashlib import sha256
 
 import pandas as pd
@@ -74,6 +74,11 @@ def candidates_from_row(row, symbol, timeframe, source, signal_time, tick, enabl
 
         entry = quant(row.close)
         distance = max(quant(row.atr * 1.5), tick * 10)
+        # An odd number of stop ticks times 2.5 produces a half-tick target.
+        # Round the reward outward so both directions retain at least 2.5R.
+        reward = (distance * Decimal("2.5") / tick).to_integral_value(
+            rounding=ROUND_CEILING
+        ) * tick
         identity = f"{symbol}:{timeframe}:{signal_time.isoformat()}:{name}:v1:{source}"
         candidates.append(
             Candidate(
@@ -85,7 +90,7 @@ def candidates_from_row(row, symbol, timeframe, source, signal_time, tick, enabl
                 expires_at=signal_time + timedelta(seconds=timeframe),
                 entry=entry,
                 stop=entry - direction * distance,
-                target=entry + direction * distance * Decimal("2.5"),
+                target=entry + direction * reward,
                 timeframe=timeframe,
                 regime=state,
                 features={f: float(row[f]) for f in FEATURES},

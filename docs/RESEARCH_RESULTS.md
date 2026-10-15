@@ -1,5 +1,13 @@
 # Provider-model selection results: October 15, 2026 UTC
 
+## Activation request and expanded research checkpoint
+
+At the subsequent activation review, eight batches had completed, producing thirty-two validation-only experimental candidates: the original four trend batches plus GBP_USD momentum, BTC-USD momentum, ETH-USD momentum and ETH-USD mean reversion. Every completed candidate had zero validation trades at the unchanged 80% threshold. EUR_USD mean reversion failed with only 261 filled candidates against the minimum 300 before purging; GBP_USD mean reversion failed the calibration requirement of five examples per outcome. EUR_USD momentum and BTC-USD mean reversion were quarantined UNKNOWN after heartbeat gaps; these attempts must not be reset or blindly retried. No model qualifies for deployment; zero active PAPER deployments and zero paper/practice orders were observed.
+
+Signal investigation also identified a proposal precision defect: an odd number of stop ticks multiplied by 2.5 produced a half-tick target. Targets now round reward outward to the next whole tick for either direction, preserving at least 2.5R. Risk precision checks remain unchanged. This changes the strategy implementation contract: existing artifact reports remain historical evidence and must not be edited or presented as evaluations of the corrected implementation. Fresh training and validation are required before any new prospective final evaluation. Fixing price precision does not establish trading advantage or authorize execution.
+
+## Original trend comparison
+
 All four scheduled trend comparisons completed. These are actual provider-data validation results, not simulated live trading. The sixteen artifacts remain EXPERIMENTAL. None passes validation: every base and doubled-cost replay generated zero trades at the unchanged 80% target threshold. Final tests remain NOT_EVALUATED. No model, final reservation, formal paper trial or practice order was activated.
 
 Lower Brier is better; improving it alone does not demonstrate an executable edge. Costs and original chronological/purged/walk-forward methodology are documented in [controlled learning](CONTROLLED_LEARNING.md). The crypto fee is the explicitly assumed 1.2% per side, not a verified account rate.
