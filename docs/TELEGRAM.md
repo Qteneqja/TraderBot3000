@@ -26,7 +26,8 @@ Migration 0010 adds claim/delivery/retry times and safe error codes. Legacy time
 Current boundaries: PAPER/practice filled/closed events and approved drift-suspension alerts are integrated. The complete requested catalog of operational alerts, daily summaries, pending/partial-order events and broker limit/stop orders is not implemented. Those must not be described as verified delivery. Delivery receipts do not establish an exactly-once guarantee at Telegram after an ambiguous network failure; the system chooses quarantine instead of a potentially duplicated send.
 
 Protocol checked against the official [Bot API methods and responses](https://core.telegram.org/bots/api) and [sendMessage](https://core.telegram.org/bots/api#sendmessage). Never enable provider debug logging that prints credential-bearing URLs.
-# Read-only monitoring
+
+## Read-only monitoring
 
 `ENABLE_TELEGRAM_MONITORING=false` defaults off. After migration 0011, the trading
 worker can poll `/status`, `/models`, `/positions`, `/trades`, `/performance`,
@@ -35,4 +36,3 @@ First enable discards old updates; replies use the existing durable outbox.
 Run only one application/consumer for a bot's getUpdates queue. No command can
 activate a model, change risk or submit an order. `/news` reports unconfigured.
 See [delivery evidence and limitations](TELEGRAM_DELIVERY_EVIDENCE.md).
-

@@ -9,6 +9,7 @@ from app.core.config import Settings
 from app.database.bootstrap import bootstrap
 from app.database.session import make_engine
 from app.execution.paper import valid_execution
+from app.main import ready
 from app.models.tables import Notification, OrderRow
 
 
@@ -50,6 +51,7 @@ def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path,
         assert interrupted.claimed_at is None and interrupted.delivered_at is None
         assert db.get(Notification, 'legacy-delivered').delivered_at is None
         assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0011"
+        assert ready(db) == {'status': 'ready', 'schema': '0011'}
     assert "model_predictions" in inspect(engine).get_table_names()
     assert "model_reviews" in inspect(engine).get_table_names()
     assert "telegram_monitor_cursors" in inspect(engine).get_table_names()
