@@ -2,7 +2,7 @@
 
 A local Forex and cryptocurrency research workspace with FastAPI, React, causal strategies, model experiments, independent risk checks and persistent paper execution.
 
-**This is an initial working implementation, not the completed autonomous platform in Prompt.md.** No trading advantage has been established. The demo uses labeled synthetic candles and simulated USD capital. Live execution is unsupported. Practice submission is disabled while its gateway is incomplete. See [CODEX_PROGRESS.md](CODEX_PROGRESS.md) for exact acceptance gaps.
+**No trading advantage has been established; autonomous model entry remains inactive.** Current provider feeds and candidate research run separately from labeled fixtures. Durable practice execution is implemented and fault-tested, but submission stays disabled pending qualification and external lifecycle acceptance. Live execution is unsupported. See the [activation report](docs/TRADING_ACTIVATION_REPORT.md), [exact qualification results](docs/FINAL_MODEL_QUALIFICATION_REPORT.md) and [CODEX_PROGRESS.md](CODEX_PROGRESS.md) for actual status.
 
 ## Docker quick start
 
@@ -16,7 +16,7 @@ docker compose exec backend python -m app.cli init --demo
 
 Open **http://localhost:5173**. API documentation: **http://localhost:8000/docs**. Health endpoints: `/health/live` and `/health/ready`.
 
-Compose runs PostgreSQL, a migration job, backend, frontend, trading worker and market-data worker. Named volumes preserve the database, research files and model artifacts. Workers stay offline by default.
+Compose runs PostgreSQL, a migration job, backend, frontend, market/trading workers, candidate-learning worker and isolated narrative worker. Named volumes preserve the database, research files and model artifacts. Example configuration defaults to fixtures and disables external narratives/notifications; current local provider settings are separate and ignored.
 
 For alternate ports, set `$env:FRONTEND_PORT='5174'` and `$env:BACKEND_PORT='8001'` before Compose. Only loopback ports are published.
 
@@ -117,7 +117,7 @@ The fault suite runs on SQLite and, when `TEST_POSTGRES_URL` is set, a dedicated
 - Conservative single-trade and single-instrument portfolio simulation, candidate-aligned labels, purged research partitions, calibration, verified artifacts and shadow replacement/retirement.
 - Practice account inspection, [bounded DeepSeek commentary](docs/LLM_INTEGRATION.md) with an isolated worker and read-only dashboard, plus Telegram outbox components. External LLM sharing must be approved before enabling.
 
-**Execution stays idle without an eligible, explicitly approved paper deployment.** Account-scoped activation, rollback and deactivation bind research evidence to runtime inference and risk checks. No current model qualifies. Formal paper trial policies and daily/weekly reports are implemented; sustained model performance remains unverified. A durable OANDA practice gateway is mocked/fault-tested and read-only reconciliation is externally verified; actual order submission remains disabled pending the [broker acceptance sequence](docs/BROKER_INTEGRATION.md). [Controlled learning](docs/CONTROLLED_LEARNING.md) records attributed outcomes, monitors drift and schedules experimental CPU-family comparisons without activation. Prospective frozen-model final evaluation is implemented with disjoint future reservations and no refitting or automatic activation. The original sixteen trend candidates failed validation; new momentum/mean-reversion research is underway; see [measured results](docs/RESEARCH_RESULTS.md). Verified executable costs, a qualified model, sustained paper/practice trials and further research/hardening remain outstanding. Real-money execution is unsupported.
+**Execution stays idle without an eligible, explicitly approved paper deployment.** Account-scoped activation, rollback and deactivation bind research evidence to runtime inference and risk checks. No current model qualifies. Formal paper trial policies and daily/weekly reports are implemented; sustained model performance remains unverified. A durable OANDA practice gateway is mocked/fault-tested and read-only reconciliation is externally verified; actual order submission remains disabled pending the [broker acceptance sequence](docs/BROKER_INTEGRATION.md). [Controlled learning](docs/CONTROLLED_LEARNING.md) records attributed outcomes, monitors drift and schedules experimental CPU-family comparisons without activation. Prospective frozen-model final evaluation is implemented with disjoint future reservations and no refitting or automatic activation. The original sixteen trend candidates failed validation; the corrected-code campaign completed without an eligible model; see [measured results](docs/RESEARCH_RESULTS.md). Verified executable costs, a qualified model, sustained paper/practice trials and further research/hardening remain outstanding. Real-money execution is unsupported.
 
 ## Documentation
 

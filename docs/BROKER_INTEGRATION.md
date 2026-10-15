@@ -1,5 +1,7 @@
 # OANDA practice integration
 
+Latest read-only recheck: October 15, 2026, approximately 17:15 UTC. CAD/non-MT4 account, current instrument/precision/margin/conversion/price checks passed; exposure flat, reconciliation cursor 810 with no issues, suspended and submission disabled. One Telegram connection test was subsequently API-confirmed, but no real practice fill/close/restart/notification lifecycle exists. The corrected-code models still do not qualify. See [TRADING_ACTIVATION_REPORT.md](TRADING_ACTIVATION_REPORT.md) for actual evidence and remaining gates; no practice authorization was issued.
+
 Implemented transport: practice-only authentication, account summary, instruments, pending orders/open trades, transaction lookup and client-ID lookup. The market-order schema builder includes FOK, OPEN_ONLY, priceBound, client IDs and stop/target-on-fill. Trade-specific closure requires positive units and does not retry uncertain outcomes.
 
 **Submission remains disabled locally.** Migration 0006 implements account-locked reservations, transaction-cursor replay, native-protection verification and a gated practice worker. Direct adapter submission still fails closed; only a committed gateway reservation can send. Market FOK / OPEN_ONLY entries are supported for EUR_USD and GBP_USD. Pending limit/stop entries remain unsupported.

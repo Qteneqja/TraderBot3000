@@ -1,5 +1,9 @@
 # Provider-model selection results: October 15, 2026 UTC
 
+## Fresh corrected-code comparison completed
+
+The subsequent predeclared 27-fit campaign is terminal: six completed batches produced eighteen candidates, all with zero base and doubled-cost validation trades; two batches failed candidate-count requirements and BTC exited natively with -11 after an incomplete logistic registration. No candidate qualifies and no final test was opened. Exact IDs, hashes, periods, baseline/calibration metrics, failed gates and the preserved native incident are in [FINAL_MODEL_QUALIFICATION_REPORT.md](FINAL_MODEL_QUALIFICATION_REPORT.md). Do not confuse these new measured results with the earlier source contract below. The original results remain historical evidence.
+
 ## Activation request and expanded research checkpoint
 
 At the subsequent activation review, eight batches had completed, producing thirty-two validation-only experimental candidates: the original four trend batches plus GBP_USD momentum, BTC-USD momentum, ETH-USD momentum and ETH-USD mean reversion. Every completed candidate had zero validation trades at the unchanged 80% threshold. EUR_USD mean reversion failed with only 261 filled candidates against the minimum 300 before purging; GBP_USD mean reversion failed the calibration requirement of five examples per outcome. EUR_USD momentum and BTC-USD mean reversion were quarantined UNKNOWN after heartbeat gaps; these attempts must not be reset or blindly retried. No model qualifies for deployment; zero active PAPER deployments and zero paper/practice orders were observed.

@@ -4,7 +4,7 @@ Follow README for startup. Apply migrations, bootstrap, then start API/workers. 
 
 The market worker streams quotes and REST-refreshes candles. Paper worker reconciles before monitoring/evaluation. Demo mode never pretends historical fixtures are current quotes. Runtime can observe explicitly deployed SHADOW models, but those models cannot approve execution. Explicit account-scoped paper trials and a persistent recorder are available through the local CLI; see [PAPER_TRIALS.md](PAPER_TRIALS.md). No current model qualifies.
 
-Workers write heartbeat/failure events to the audit table. Failures log exception types, avoiding credential-bearing URLs. Retention, restart alerts, notification dispatch, broker transaction monitoring and drift alerts remain outstanding.
+Workers write heartbeat/failure events to the audit table. Failures log exception types, avoiding credential-bearing URLs. Durable lifecycle notification dispatch, broker transaction reconciliation and controlled drift monitoring are implemented; their actual qualification and external lifecycle evidence remain separate. Retention/backups, the broader operational-alert catalog and sustained/external restart acceptance remain outstanding. New research-child crash tracing captures stack locations without locals; see current deployment limitations in the activation report.
 
 Recovery: suspend new entries, inspect failure/quote timestamps, verify order/account state, resolve unknown outcomes, then restart through reconciliation. Never delete orders or volumes as a shortcut. Local services stop with Ctrl+C; Compose stops with `docker compose stop`.
 
@@ -21,7 +21,7 @@ Troubleshooting:
 - Model candle manifest mismatch: restore the original dataset or start a new experiment; do not rewrite the registered hash to pass verification.
 - Paper position lacks cost metadata after upgrade: reconciliation suspends it. Preserve the order and investigate; migration never fabricates historical charges.
 
-Current schema is migration `0005`, including research reviews, paper deployment history/current slots and recorder runs/samples. Docker's migration job applies upgrades before API/workers start. The SQLite upgrade test preserves an older open order and confirms it is quarantined when its original cost assumptions are unavailable. PostgreSQL schema consistency was also checked after upgrade.
+Current schema is migration `0010`, including practice reconciliation, controlled learning, prospective final tests, isolated narratives and notification receipt/claim/retry timestamps. Docker's migration job applies upgrades before API/workers start. SQLite tests preserve older orders and notification evidence; missing historical costs/timestamps are not invented. Interrupted legacy sends become UNKNOWN. PostgreSQL schema consistency was checked after upgrade. See the [current activation report](TRADING_ACTIVATION_REPORT.md) for exact running-versus-committed deployment status and unsupported workflows.
 
 Research example and shadow commands are in README. Model artifacts and JSON reports stay in named volumes and are excluded from Git. The Model lab displays stored probabilities and distinguishes replay from streaming. Reports are immutable; choose a new output filename for a new evaluation.
 
