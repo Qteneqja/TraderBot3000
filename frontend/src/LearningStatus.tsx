@@ -1,7 +1,7 @@
 import { useApi } from './api';
 
 type Learning = { schedules: { id: string; enabled: boolean; symbol: string; families: string[];
-  interval_days: number; next_due: string }[]; runs: { id: string; state: string; final_test?: string;
+  strategy: string; interval_days: number; next_due: string }[]; runs: { id: string; state: string; final_test?: string;
   candidates: { model?: string; family: string; status: string; validation?: { multiclass_brier: number } }[] }[];
   outcomes: { mode: string; status: string; count: number }[] };
 
@@ -12,7 +12,7 @@ export default function LearningStatus() {
     <p>Retraining registers experimental candidates. Model activation requires separate operator approval and qualifying final evidence.</p>
     {error && <p role="alert">{error} Learning records may be stale.</p>}
     {!data?.schedules?.length ? <p>No research schedule enabled.</p> : data.schedules.map(s => <div className="model-record" key={s.id}>
-      <h3>{s.symbol} · {s.enabled ? 'Scheduled' : 'Disabled'}</h3>
+      <h3>{s.symbol} · {s.strategy} · {s.enabled ? 'Scheduled' : 'Disabled'}</h3>
       <p>Every {s.interval_days} days · Next due {new Date(s.next_due).toLocaleString()} · {s.families.join(', ')}</p>
     </div>)}
     {data?.runs?.map(run => <div className="model-record" key={run.id}>

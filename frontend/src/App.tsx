@@ -11,6 +11,7 @@ import { DataCoverage } from './DataCoverage';
 import PracticeStatus from './PracticeStatus';
 import LearningStatus from './LearningStatus';
 import FinalEvaluations from './FinalEvaluations';
+import Narratives from './Narratives';
 import { useApi, type Candle, type Model, type Order, type Overview, type Signal, type Strategy, type System } from './api';
 
 const nav = [
@@ -124,6 +125,7 @@ export default function App() {
       {page === 'Model lab' && <DataCoverage/>}
       {page === 'Model lab' && <LearningStatus/>}
       {page === 'Model lab' && <FinalEvaluations/>}
+      {(page === 'Model lab' || page === 'System health') && <Narratives/>}
       {page === 'System health' && <PracticeStatus/>}
       {page === 'Model lab' && <section className="panel"><div className="panel-heading"><div className="panel-title"><Cpu size={18}/><h2>Model registry</h2></div><Badge>EXPLICIT PROMOTION ONLY</Badge></div>
         {!models.data?.length ? <Empty title="Evidence starts with research">No trained model has been registered. Import provider history, run chronological training, then inspect calibration and execution costs before deployment.</Empty> : models.data.map(m => <div className="model-record" key={m.id}><h3>{m.id} <Badge tone="amber">{m.status}</Badge></h3><p>{m.metadata_json.family} · {m.metadata_json.symbol} · {m.metadata_json.source}</p><div className="metric-row"><span>Brier score <strong>{m.metadata_json.test?.multiclass_brier.toFixed(4) ?? '—'}</strong></span><span>Log loss <strong>{m.metadata_json.test?.log_loss.toFixed(4) ?? '—'}</strong></span><span>Test observations <strong>{m.metadata_json.test?.samples ?? '—'}</strong></span></div><p>{m.metadata_json.limitations?.join(' · ')}</p></div>)}</section>}

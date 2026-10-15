@@ -1,5 +1,7 @@
 # Controlled learning
 
+October 15 continuation: eight additional weekly momentum/mean-reversion plans are running/queued across the four provider assets and four CPU families (thirty-two planned candidate fits). Original trend schedules remain. A stale first-job lease was quarantined rather than retried; training continues with other independent plans. Strategy names now distinguish same-asset schedules in Model lab. [DeepSeek commentary](LLM_INTEGRATION.md) is implemented separately, offline pending explicit external-sharing approval; it never supplies labels or promotes models.
+
 Migration 0007 adds immutable attributed outcomes, explicit research schedules and claimable jobs. The separate learning-worker collects closed outcomes, monitors deployed models and trains candidates without blocking market/execution workers. It cannot activate, replace or roll back models.
 
 ## Outcomes and drift
