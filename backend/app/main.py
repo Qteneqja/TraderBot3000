@@ -16,6 +16,7 @@ from app.models.tables import (
     Account,
     CandleRow,
     Event,
+    FinalEvaluation,
     Instrument,
     LearningRun,
     LearningSchedule,
@@ -86,7 +87,7 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0007" or db.get(Account, "PAPER") is None:
+        if revision != "0008" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
@@ -153,6 +154,14 @@ def learning_status(db: Session = Depends(get_db)):
             select(TradeOutcome.mode, TradeOutcome.status, func.count()).group_by(TradeOutcome.mode, TradeOutcome.status))],
         "promotion": "EXPLICIT_OPERATOR_APPROVAL_ONLY", "live_execution": "UNSUPPORTED",
     }
+
+
+@app.get('/api/final-evaluations')
+def final_evaluations(db: Session = Depends(get_db)):
+    return [{'id': row.id, 'parent': row.parent_id, 'model': row.model_id, 'state': row.state,
+             'start': row.plan['start'], 'end': row.plan['end'], 'result': row.result,
+             'execution_authority': False} for row in db.scalars(select(FinalEvaluation)
+                .order_by(FinalEvaluation.created_at.desc()).limit(50))]
 
 
 @app.get("/api/practice-status")

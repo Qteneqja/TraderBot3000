@@ -129,6 +129,18 @@ def main():
         p = commands.add_parser(name)
         p.add_argument("run_id")
     commands.add_parser("acceptance-policy")
+    p = commands.add_parser('reserve-final-test')
+    p.add_argument('version')
+    p.add_argument('--start', required=True)
+    p.add_argument('--end', required=True)
+    p.add_argument('--operator', required=True)
+    p.add_argument('--reason', required=True)
+    p = commands.add_parser('evaluate-final-test')
+    p.add_argument('reservation')
+    p = commands.add_parser('abandon-final-test')
+    p.add_argument('reservation')
+    p.add_argument('--operator', required=True)
+    p.add_argument('--reason', required=True)
     p = commands.add_parser("assess-model")
     p.add_argument("version")
     p.add_argument("--artifacts", default="model_artifacts")
@@ -183,7 +195,22 @@ def main():
             p.add_argument("--family", choices=["logistic", "lightgbm", "xgboost"], default="logistic")
     commands.add_parser("backtest-demo")
     args = parser.parse_args()
-    if args.command in ("activate-paper", "rollback-paper", "deactivate-paper"):
+    if args.command in ('reserve-final-test', 'evaluate-final-test', 'abandon-final-test'):
+        from app.machine_learning.prospective import abandon_period, evaluate_period, reserve_period
+
+        settings = get_settings()
+        with SessionLocal() as db:
+            root = Path(settings.model_artifact_dir)
+            if args.command == 'reserve-final-test':
+                result = reserve_period(db, args.version, root, settings, datetime.fromisoformat(args.start),
+                                        datetime.fromisoformat(args.end), args.operator, args.reason)
+            elif args.command == 'evaluate-final-test':
+                result = evaluate_period(db, args.reservation, root, settings)
+            else:
+                abandon_period(db, args.reservation, args.operator, args.reason)
+                result = {'reservation': args.reservation, 'state': 'ABANDONED'}
+            print(json.dumps({'result': result, 'execution_authority': False}, indent=2))
+    elif args.command in ("activate-paper", "rollback-paper", "deactivate-paper"):
         from app.machine_learning.deployment import activate, deactivate, rollback
 
         settings, now = get_settings(), datetime.now(timezone.utc)
@@ -410,6 +437,13 @@ def main():
             start = datetime.fromisoformat(args.start) if args.start else None
             end = datetime.fromisoformat(args.end) if args.end else None
             rows = load_candles(db, args.symbol, args.timeframe, args.source, 1_000_000, start=start, end=end)
+            from app.machine_learning.prospective import training_end
+
+            if not rows:
+                raise ValueError('No data for requested training interval')
+            allowed_end = training_end(db, args.symbol, args.source, rows[0].time,
+                                       rows[-1].time + timedelta(seconds=args.timeframe))
+            rows = [c for c in rows if c.time + timedelta(seconds=args.timeframe) <= allowed_end]
             report = train_candidates(
                 rows,
                 instrument.tick_size,
@@ -432,8 +466,12 @@ def main():
             if not rows:
                 raise ValueError("No data for requested source/instrument/timeframe")
             if args.command == "train":
+                from app.machine_learning.prospective import training_end
                 from app.machine_learning.training import train
 
+                allowed_end = training_end(db, args.symbol, args.source, rows[0].time,
+                                           rows[-1].time + timedelta(seconds=args.timeframe))
+                rows = [c for c in rows if c.time + timedelta(seconds=args.timeframe) <= allowed_end]
                 report = train(rows, Path(args.output), args.family)
                 db.add(ModelVersion(id=report["version"], metadata_json=report, status="EXPERIMENTAL"))
                 db.commit()

@@ -303,3 +303,14 @@ class LearningRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     result: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class FinalEvaluation(Base):
+    __tablename__ = "final_evaluations"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    parent_id: Mapped[str] = mapped_column(ForeignKey("model_versions.id"), unique=True)
+    model_id: Mapped[str | None] = mapped_column(ForeignKey("model_versions.id"))
+    state: Mapped[str] = mapped_column(String(24), default="RESERVED")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    plan: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)

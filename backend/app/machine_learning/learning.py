@@ -13,6 +13,7 @@ from app.backtesting.registered import evaluate_registered
 from app.backtesting.simulator import FillAssumptions
 from app.machine_learning.candidate_training import train_candidates
 from app.machine_learning.policy import acceptance_policy, digest
+from app.machine_learning.prospective import training_end
 from app.market_data.coverage import coverage_report
 from app.market_data.providers import CoinbaseData, OandaData
 from app.market_data.store import ingest, load_candles
@@ -146,6 +147,8 @@ def run_research(db, run_id, worker_id, settings, now=None):
             raise ValueError("Research schedule disabled or changed")
         end = aware(run.scheduled_for).replace(hour=0, minute=0, second=0, microsecond=0)
         start = end - timedelta(days=plan["history_days"])
+        requested_end = end
+        end = training_end(db, plan['symbol'], plan['source'], start, end)
         instrument = db.get(Instrument, plan["symbol"])
         if instrument is None or instrument.provider != plan["source"]:
             raise ValueError("Research instrument/source changed")
@@ -207,6 +210,7 @@ def run_research(db, run_id, worker_id, settings, now=None):
                   "data": coverage, "policy": acceptance_policy(research_settings), "candidates": candidates,
                   "active_models": active, "comparison": "NO_ACTIVE_MODEL" if not active else "COMMON_PERIOD_VALIDATION",
                   "comparisons": comparisons,
+                  "requested_end": requested_end.isoformat(), "training_end_exclusive": end.isoformat(),
                   "selection_inputs": "Validation and walk-forward evidence only; no final test metrics",
                   "final_test": "PROSPECTIVE_UNTOUCHED_PERIOD_REQUIRED", "execution_authority": False,
                   "limitations": ["Trade outcomes are monitoring evidence; selected fills are not duplicated as independent training cases.",

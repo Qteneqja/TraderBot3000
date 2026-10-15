@@ -84,6 +84,8 @@ def partition_checks(report, stress, calibration, baseline, policy):
 
 
 def assess_model(db, version_id, root, settings):
+    from app.machine_learning.prospective import holdout_provenance
+
     version = db.get(ModelVersion, version_id)
     if version is None:
         raise ModelUnavailable("Unknown model version")
@@ -103,6 +105,7 @@ def assess_model(db, version_id, root, settings):
         days = 0
     checks = {
         "PAPER_RESEARCH_MODE": settings.trading_mode == "PAPER",
+        "RESERVED_HOLDOUT_PROVENANCE": holdout_provenance(db, version, allow_evaluating=True),
         "FINAL_TEST_EVALUATED": metadata.get("evaluation_mode", "FULL") == "FULL",
         "WALK_FORWARD_VERIFIED": len(metadata.get("walk_forward", [])) == policy["walk_forward_folds"]
         and all(f.get("status") == "EVALUATED" for f in metadata.get("walk_forward", [])),

@@ -27,6 +27,7 @@ SCOPE_KEYS = ("symbol", "strategy", "timeframe", "source")
 PREREQUISITES = {
     "PAPER_RESEARCH_MODE",
     "FINAL_TEST_EVALUATED",
+    "RESERVED_HOLDOUT_PROVENANCE",
     "WALK_FORWARD_VERIFIED",
     "ARTIFACT_INTEGRITY",
     "POLICY_PREDECLARED_AND_UNCHANGED",
@@ -70,9 +71,13 @@ def runtime_contract(settings):
 
 
 def validate_evidence(db, version_id, review_id, root, settings):
+    from app.machine_learning.prospective import holdout_provenance
+
     if settings.trading_mode != "PAPER" or settings.demo_mode:
         raise ModelUnavailable("Paper trials require PAPER mode and real market data")
     version, review = db.get(ModelVersion, version_id), db.get(ModelReview, review_id)
+    if version is not None and not holdout_provenance(db, version):
+        raise ModelUnavailable('Reserved final-test evidence is incomplete or mismatched')
     if version is None or review is None or review.model_id != version_id:
         raise ModelUnavailable("Model and review must exist and refer to the same version")
     if version.status not in ("EXPERIMENTAL", "SHADOW", "RETIRED"):
