@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 from app.brokers.validation import decimal, validate_protection
 from app.machine_learning.policy import digest
 from app.models.tables import Event, Notification, PracticeAccount, PracticeOrder, PracticeTransaction
+from app.notifications.messages import practice_message
 from app.schemas.domain import aware
 
 OPEN = ("RESERVED", "SUBMITTING", "UNKNOWN", "FILLED", "CLOSING", "QUARANTINED")
@@ -47,8 +48,7 @@ def client_id(transaction):
 def notify_state(db, order, state):
     identifier = f"practice-{order.id[:40]}-{state}"
     if db.get(Notification, identifier) is None:
-        db.add(Notification(id=identifier, text=f"OANDA PRACTICE {state}: {order.candidate['symbol']} "
-                                               f"{order.candidate['direction']}; order {order.id[:12]}."))
+        db.add(Notification(id=identifier, text=practice_message(db, order, state)))
 
 
 def apply_transaction(db, account, transaction, orders, now):

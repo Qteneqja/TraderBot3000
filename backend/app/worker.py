@@ -112,6 +112,7 @@ async def trading_worker():
     while True:
         now = datetime.now(timezone.utc)
         error_type = None
+        evaluations = {'instruments': 0, 'candidates_observed': 0, 'missing_quotes': 0}
         try:
             with SessionLocal() as db:
                 monitor(db, settings, now)
@@ -128,7 +129,9 @@ async def trading_worker():
                             else None
                         )
                     if quote:
+                        evaluations['instruments'] += 1
                         for candidate in evaluate(candles, now, instrument.tick_size):
+                            evaluations['candidates_observed'] += 1
                             with SessionLocal() as db:
                                 shadow = shadow_predict(
                                     db, candidate, quote, Path(settings.model_artifact_dir)
@@ -139,12 +142,15 @@ async def trading_worker():
                                 else:
                                     db.rollback()
                                 submit(db, candidate, quote, settings, now)
+                    else:
+                        evaluations['missing_quotes'] += 1
             record(
                 "trading_worker_heartbeat",
                 {
                     "mode": settings.trading_mode,
                     "demo": settings.demo_mode,
                     "model": "ACCOUNT_SCOPED_PAPER_DEPLOYMENT_GATE",
+                    "evaluations": evaluations,
                 },
             )
         except asyncio.CancelledError:

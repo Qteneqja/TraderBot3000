@@ -35,6 +35,14 @@ def test_dashboard_and_auth(tmp_path):
             assert learning['runs'] == learning['schedules'] == learning['outcomes'] == []
             assert learning['promotion'] == 'EXPLICIT_OPERATOR_APPROVAL_ONLY'
             assert client.post('/api/learning').status_code == 405
+            diagnostic = client.get('/api/activation-diagnostic').json()
+            assert diagnostic['first_entry_blocker'] == 'NO_ACTIVE_QUALIFIED_PAPER_DEPLOYMENT'
+            assert diagnostic['execution_authority'] is False
+            assert diagnostic['signals']['stored_counts'] == {}
+            assert diagnostic['workers']['trading']['state'] == 'STALE_OR_UNSEEN'
+            assert client.post('/api/activation-diagnostic').status_code == 405
+            assert client.get('/api/notifications').json()['delivery_evidence'] == 'NOT_VERIFIED'
+            assert client.post('/api/notifications').status_code == 405
             assert client.get('/api/models?limit=101').status_code == 422
             assert client.post("/api/admin/suspend").status_code == 503
             assert client.post("/api/live/activate").status_code == 404

@@ -26,6 +26,8 @@ def main():
             "/api/paper-runs",
             "/api/risk",
             "/api/system",
+            "/api/activation-diagnostic",
+            "/api/notifications",
         ):
             client.get(route).raise_for_status()
         overview = client.get("/api/overview").json()

@@ -217,6 +217,11 @@ class Notification(Base):
     text: Mapped[str] = mapped_column(String(4096))
     status: Mapped[str] = mapped_column(String(24), default="PENDING")
     attempts: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(48))
 
 
 class PracticeAccount(Base):

@@ -88,11 +88,25 @@ def ready(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        if revision != "0009" or db.get(Account, "PAPER") is None:
+        if revision != "0010" or db.get(Account, "PAPER") is None:
             raise ValueError("Uninitialized database")
     except Exception:
         raise HTTPException(503, "Database not ready; run migrations and bootstrap") from None
     return {"status": "ready", "schema": revision}
+
+
+@app.get('/api/activation-diagnostic')
+def activation_diagnostic(db: Session = Depends(get_db)):
+    from app.operations.diagnostic import activation_report
+
+    return activation_report(db, get_settings(), datetime.now(timezone.utc))
+
+
+@app.get('/api/notifications')
+def notification_status(db: Session = Depends(get_db)):
+    from app.notifications.telegram import status
+
+    return status(db, get_settings())
 
 
 @app.get("/api/overview")
@@ -302,6 +316,7 @@ def risk():
 @app.get("/api/system")
 def system(db: Session = Depends(get_db)):
     from app.llm.pipeline import status as llm_status
+    from app.notifications.telegram import status as telegram_status
 
     s = get_settings()
     events = db.scalars(select(Event).order_by(Event.id.desc()).limit(50)).all()
@@ -332,9 +347,7 @@ def system(db: Session = Depends(get_db)):
         "oanda": feed_status("oanda"),
         "coinbase": feed_status("coinbase"),
         "llm": llm_status(db, s),
-        "telegram": "CONFIGURED_NOT_VERIFIED"
-        if s.telegram_bot_token.get_secret_value()
-        else "NOT_CONFIGURED",
+        "telegram": telegram_status(db, s)['status'],
         "economic_calendar": "UNAVAILABLE",
         "events": [serialize(e) for e in events],
     }

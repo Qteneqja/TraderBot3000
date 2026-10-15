@@ -129,6 +129,14 @@ def main():
         p = commands.add_parser(name)
         p.add_argument("run_id")
     commands.add_parser("acceptance-policy")
+    commands.add_parser('activation-diagnostic')
+    p = commands.add_parser('research-campaign-report')
+    p.add_argument('campaign')
+    p.add_argument('--output', required=True)
+    p = commands.add_parser('telegram-test')
+    p.add_argument('--event-id', required=True)
+    p.add_argument('--operator', required=True)
+    p.add_argument('--send', action='store_true', help='Explicit authorization for one system test message')
     commands.add_parser('llm-tick')
     p = commands.add_parser('reserve-final-test')
     p.add_argument('version')
@@ -436,6 +444,33 @@ def main():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(report, indent=2), encoding="utf-8")
             print(json.dumps({k: v for k, v in report.items() if k not in ("quality", "unexplained_missing_timestamps")}, indent=2))
+    elif args.command == 'research-campaign-report':
+        from app.operations.research_report import campaign_report
+
+        with SessionLocal() as db:
+            report = campaign_report(db, args.campaign, datetime.now(timezone.utc), get_settings())
+            path = Path(args.output)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('x', encoding='utf-8') as stream:
+                json.dump(report, stream, indent=2)
+            print(json.dumps({'campaign': args.campaign, 'batches': len(report['batches']),
+                              'final_test': report['final_test'], 'execution_authority': False}))
+    elif args.command == 'activation-diagnostic':
+        from app.operations.diagnostic import activation_report
+
+        with SessionLocal() as db:
+            print(json.dumps(activation_report(db, get_settings(), datetime.now(timezone.utc)), indent=2))
+    elif args.command == 'telegram-test':
+        from app.notifications.telegram import connectivity_test, status
+
+        async def test_connection():
+            with SessionLocal() as db:
+                if not args.send:
+                    return status(db, get_settings())
+                async with httpx.AsyncClient(timeout=10) as client:
+                    return await connectivity_test(db, get_settings(), client, args.event_id, args.operator)
+
+        print(json.dumps(asyncio.run(test_connection()), indent=2))
     elif args.command == "train-candidates":
         from decimal import Decimal
 

@@ -18,6 +18,7 @@ from app.models.tables import (
     QuoteRow,
     SignalRow,
 )
+from app.notifications.messages import paper_message
 from app.risk_management.engine import InstrumentRules, RiskState, approve
 from app.schemas.domain import Candidate, Quote, aware
 
@@ -81,7 +82,7 @@ def transition(db: Session, order: OrderRow, state: str, detail=""):
     if state in ("FILLED", "CLOSED") and order.execution.get("deployment_id"):
         identifier = f"paper:{order.id}:{state}"
         if db.get(Notification, identifier) is None:
-            db.add(Notification(id=identifier, text=f"PAPER {state}: {order.symbol} {order.direction}; order {order.id}"))
+            db.add(Notification(id=identifier, text=paper_message(db, order, state)))
 
 
 def reconcile(db: Session, now: datetime):

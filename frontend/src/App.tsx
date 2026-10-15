@@ -12,6 +12,7 @@ import PracticeStatus from './PracticeStatus';
 import LearningStatus from './LearningStatus';
 import FinalEvaluations from './FinalEvaluations';
 import Narratives from './Narratives';
+import ActivationStatus from './ActivationStatus';
 import { useApi, type Candle, type Model, type Order, type Overview, type Signal, type Strategy, type System } from './api';
 
 const nav = [
@@ -122,6 +123,7 @@ export default function App() {
         {!orders.data?.length ? <Empty title="A clean trading journal">No executions recorded. Once a qualified paper trade is filled, its lifecycle and outcome will appear here.</Empty> :
           <div className="table-scroll"><table><thead><tr>{['Instrument', 'Direction', 'Units', 'Entry', 'Stop', 'Target', 'Status', 'Fees paid', 'Net P&L'].map(c => <th key={c}>{c}</th>)}</tr></thead><tbody>{orders.data.map(o => <tr key={o.id}><td>{displaySymbol(o.symbol)}</td><td>{o.direction}</td><td>{o.units}</td><td>{price(o.entry, o.symbol)}</td><td>{price(o.stop, o.symbol)}</td><td>{price(o.target, o.symbol)}</td><td><Badge>{o.state}</Badge></td><td>{money(o.fees_paid)}</td><td>{o.pnl === null ? 'Open' : money(o.pnl)}</td></tr>)}</tbody></table></div>}</section>}
       {page === 'Strategies' && <div className="card-grid">{strategies.data?.map((s, i) => <section key={s.id} className="panel strategy-card"><div className="strategy-index">0{i+1}<Badge>RESEARCH · V{s.version}</Badge></div><h2>{s.name}</h2><p>Eligible in {s.regimes.map(human).join(', ')} conditions.</p><div className="check-row"><span>Validated trading edge</span><Badge tone="amber">NOT ESTABLISHED</Badge></div><small>Deterministic signals · Independent risk approval</small></section>)}</div>}
+      {(page === 'Overview' || page === 'System health') && <ActivationStatus/>}
       {page === 'Model lab' && <DataCoverage/>}
       {page === 'Model lab' && <LearningStatus/>}
       {page === 'Model lab' && <FinalEvaluations/>}

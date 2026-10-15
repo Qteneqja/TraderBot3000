@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.database.bootstrap import bootstrap
 from app.database.session import make_engine
 from app.execution.paper import valid_execution
-from app.models.tables import OrderRow
+from app.models.tables import Notification, OrderRow
 
 
 def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path, monkeypatch):
@@ -35,6 +35,8 @@ def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path,
                     0.01,'2025-01-01','2025-01-02')
         """)
         )
+        db.execute(text("INSERT INTO notification_events(id,text,status,attempts) VALUES "
+                        "('legacy-send','old message','SENDING',1),('legacy-delivered','old receipt','DELIVERED',1)"))
         db.commit()
     command.upgrade(config, "head")
     command.check(config)
@@ -43,7 +45,11 @@ def test_upgrade_preserves_legacy_orders_and_quarantines_missing_costs(tmp_path,
         assert legacy.state == "FILLED" and legacy.units == 1
         assert legacy.execution == {} and legacy.fees_paid == 0 and legacy.financing_bars == 0
         assert not valid_execution(legacy)
-        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0009"
+        interrupted = db.get(Notification, 'legacy-send')
+        assert interrupted.status == 'UNKNOWN' and interrupted.error_code == 'INTERRUPTED_DELIVERY'
+        assert interrupted.claimed_at is None and interrupted.delivered_at is None
+        assert db.get(Notification, 'legacy-delivered').delivered_at is None
+        assert db.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0010"
     assert "model_predictions" in inspect(engine).get_table_names()
     assert "model_reviews" in inspect(engine).get_table_names()
     assert {"paper_deployments", "paper_deployment_slots", "paper_runs", "paper_samples"} <= set(
