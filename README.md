@@ -121,4 +121,6 @@ The fault suite runs on SQLite and, when `TEST_POSTGRES_URL` is set, a dedicated
 
 ## Documentation
 
+Current measured checkpoint: [autonomous trading readiness](docs/AUTONOMOUS_TRADING_READINESS.md), [model root causes](docs/MODEL_ROOT_CAUSE_ANALYSIS.md), [bounded strategy comparisons](docs/STRATEGY_COMPARISON.md), and [execution-cost evidence](docs/EXECUTION_COST_VALIDATION.md). No model currently qualifies; the genuinely future observation period has not started.
+
 [Architecture](docs/ARCHITECTURE.md) · [Data](docs/DATA_PIPELINE.md) · [Strategies](docs/TRADING_STRATEGIES.md) · [Models](docs/MODEL_TRAINING.md) · [Backtesting](docs/BACKTESTING.md) · [Risk](docs/RISK_MANAGEMENT.md) · [Broker](docs/BROKER_INTEGRATION.md) · [Operations](docs/OPERATIONS.md) · [Security](docs/SECURITY.md) · [Live readiness](docs/LIVE_TRADING_READINESS.md)
